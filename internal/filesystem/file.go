@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -202,10 +203,12 @@ func (f *File) Close() error {
 		for i, chunk := range f.chunks {
 			nodes[i] = convertToNode(chunk)
 		}
+		log.Printf("starting to write nodes to db : %s", f.name)
 		err := dataprovider.CreateFileNodes(f.id, nodes)
 		if err != nil {
 			return err
 		}
+		log.Printf("finished writing nodes to db : %s", f.name)
 		f.streamWrite = nil
 	}
 	if f.streamRead != nil {

@@ -2,6 +2,7 @@ package dataprovider
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"math/rand"
 	"time"
@@ -191,20 +192,22 @@ func (pgp *PGProvider) createFileNodes(fid string, nodes []*Node) error {
 	// Defer a rollback in case anything goes wrong
 	defer tx.Rollback()
 
-	// Prepare a statement within the transaction
-	stmt, err := tx.Prepare(`INSERT INTO node (id, file, url, size) VALUES ($1, $2, $3, $4)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close() // Prepared statements take up server resources, so ensure they're closed when done.
-
-	// Insert each node
+	// Build the INSERT query with multiple values
+	var values []interface{}
+	query := `INSERT INTO node (id, file, url, size) VALUES `
+	placeholderCounter := 1
 	for _, node := range nodes {
 		id := pgp.sg.Generate()
-		if _, err := stmt.Exec(id, fid, node.URL, node.Size); err != nil {
-			return err
-		}
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d),", placeholderCounter, placeholderCounter+1, placeholderCounter+2, placeholderCounter+3)
+		values = append(values, id, fid, node.URL, node.Size)
+		placeholderCounter += 4
 	}
+	// Remove the last comma and execute the query
+	query = query[:len(query)-1]
+	if _, err := tx.Exec(query, values...); err != nil {
+		return err
+	}
+
 	// Update mtime every time something is written on file
 	if _, err := tx.Exec("UPDATE fs SET mtime = NOW() WHERE id=$1", fid); err != nil {
 		return err
