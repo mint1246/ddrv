@@ -66,4 +66,9 @@ var migrations = []migrate.Migration{
 		}),
 		Down: migrate.Queries([]string{}),
 	},
+	{
+		ID:   3,
+		Up:   migrate.Queries([]string{`CREATE INDEX idx_node_file ON node (file);`}),
+		Down: migrate.Queries([]string{`DROP INDEX idx_node_file;`}),
+	},
 }
