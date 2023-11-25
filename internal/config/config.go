@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/alecthomas/kong"
 )
 
@@ -13,7 +15,8 @@ type Config struct {
 	HTTPGuest    bool             `help:"If true, enables read-only guest access to the HTTP file manager without login." env:"HTTP_GUEST" default:"false"`
 	WDAddr       string           `help:"Network address for the WebDav server to bind to" env:"WEBDAV_ADDR" default:":2527"`
 	DbURL        string           `help:"Connection string for the Postgres database. The format should be: postgres://user:password@localhost:port/database?sslmode=disable" env:"DATABASE_URL" required:""`
-	Webhooks     string           `help:"Comma-separated list of Manager webhook URLs used for sending attachment messages." env:"WEBHOOKS" required:""`
+	Tokens       string           `help:"Discord bot tokens separated by ','" env:"TOKENS" required:""`
+	Channels     string           `help:"Discord server channels separated by ','" env:"CHANNELS" required:""`
 	ChunkSize    int              `help:"The maximum size in bytes of chunks to be sent via Manager webhook. By default, it's set to 24MB (25165824 bytes)." env:"CHUNK_SIZE" default:"25165824"`
 	AsyncWrite   bool             `help:"Enables concurrent file uploads to Discord, resulting in faster file transfers. Note that this will use significantly more RAM, approximately (chunkSize * number of webhooks) + 20% extra bytes. Use with caution based on your system's memory capacity." env:"ASYNC_WRITE" default:"false"`
 	Version      kong.VersionFlag `kong:"name='version', help='Display version.'"`
@@ -35,6 +38,7 @@ func HTTPAddr() string     { return config.HTTPAddr }
 func HTTPGuest() bool      { return config.HTTPGuest }
 func WDAddr() string       { return config.WDAddr }
 func DbURL() string        { return config.DbURL }
-func Webhooks() string     { return config.Webhooks }
 func ChunkSize() int       { return config.ChunkSize }
 func AsyncWrite() bool     { return config.AsyncWrite }
+func Tokens() []string     { return strings.Split(config.Tokens, ",") }
+func Channels() []string   { return strings.Split(config.Channels, ",") }

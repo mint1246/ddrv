@@ -23,8 +23,8 @@ type File struct {
 	data         []*dataprovider.Node
 	readDirCount int
 
-	mgr         *ddrv.Manager
-	chunks      []*ddrv.Attachment
+	driver      *ddrv.Driver
+	chunks      []*ddrv.Chunk
 	streamWrite io.WriteCloser
 	streamRead  io.ReadCloser
 }
@@ -139,11 +139,11 @@ func (f *File) Write(p []byte) (int, error) {
 			}
 		}
 		if config.AsyncWrite() {
-			f.streamWrite = f.mgr.NewNWriter(func(chunk *ddrv.Attachment) {
+			f.streamWrite = f.driver.NewNWriter(func(chunk *ddrv.Chunk) {
 				f.chunks = append(f.chunks, chunk)
 			})
 		} else {
-			f.streamWrite = f.mgr.NewWriter(func(chunk *ddrv.Attachment) {
+			f.streamWrite = f.driver.NewWriter(func(chunk *ddrv.Chunk) {
 				f.chunks = append(f.chunks, chunk)
 			})
 		}
@@ -219,12 +219,12 @@ func (f *File) Close() error {
 }
 
 func (f *File) openReadStream(startAt int64) error {
-	chunks := make([]ddrv.Attachment, len(f.data))
+	chunks := make([]ddrv.Chunk, len(f.data))
 	for i, node := range f.data {
-		chunks[i] = ddrv.Attachment{URL: node.URL, Size: node.Size}
+		chunks[i] = ddrv.Chunk{URL: node.URL, Size: node.Size}
 	}
 
-	stream, err := f.mgr.NewReader(chunks, startAt)
+	stream, err := f.driver.NewReader(chunks, startAt)
 	if err != nil {
 		return err
 	}
@@ -232,6 +232,6 @@ func (f *File) openReadStream(startAt int64) error {
 	return nil
 }
 
-func convertToNode(chunk *ddrv.Attachment) *dataprovider.Node {
-	return &dataprovider.Node{URL: chunk.URL, Size: chunk.Size}
+func convertToNode(chunk *ddrv.Chunk) *dataprovider.Node {
+	return &dataprovider.Node{URL: chunk.URL, Size: chunk.Size, MId: chunk.MId, Ex: chunk.Ex, Is: chunk.Is, Hm: chunk.Hm}
 }

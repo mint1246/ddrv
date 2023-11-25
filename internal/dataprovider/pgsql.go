@@ -2,6 +2,7 @@ package dataprovider
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -59,7 +60,7 @@ func (pgp *PGProvider) get(id, parent string) (*File, error) {
 	}
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotExist
 		}
 		return nil, err
@@ -134,7 +135,7 @@ func (pgp *PGProvider) update(id, parent string, file *File) (*File, error) {
 		).Scan(&file.ID, &file.Dir, &file.MTime)
 	}
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotExist
 		}
 		return nil, pqErrToOs(err) // Handle already exists
@@ -229,7 +230,7 @@ func (pgp *PGProvider) stat(name string) (*File, error) {
 	err := pgp.db.QueryRow("SELECT id,name,dir,size,mtime FROM stat($1)", name).
 		Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotExist
 		}
 		return nil, pqErrToOs(err)
@@ -288,7 +289,8 @@ func (pgp *PGProvider) chMTime(name string, mtime time.Time) error {
 
 // Handle custom PGFs code
 func pqErrToOs(err error) error {
-	if pqErr, ok := err.(*pq.Error); ok {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
 		switch pqErr.Code {
 		case "P0001": // root dir permission issue
 			return ErrPermission

@@ -74,7 +74,7 @@ func CreateFileHandler(mgr *ddrv.Manager) fiber.Handler {
 				nodes := make([]*dp.Node, 0)
 
 				var dwriter io.WriteCloser
-				onChunk := func(a *ddrv.Attachment) {
+				onChunk := func(a *ddrv.Chunk) {
 					file.Size += int64(a.Size)
 					nodes = append(nodes, &dp.Node{URL: a.URL, Size: a.Size})
 				}
@@ -181,9 +181,9 @@ func DownloadFileHandler(mgr *ddrv.Manager) fiber.Handler {
 			return err
 		}
 
-		chunks := make([]ddrv.Attachment, 0)
+		chunks := make([]ddrv.Chunk, 0)
 		for _, node := range nodes {
-			chunks = append(chunks, ddrv.Attachment{URL: node.URL, Size: node.Size})
+			chunks = append(chunks, ddrv.Chunk{URL: node.URL, Size: node.Size})
 		}
 
 		fileRange := c.Request().Header.Peek("range")

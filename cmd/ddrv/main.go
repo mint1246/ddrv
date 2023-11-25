@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"runtime"
-	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/joho/godotenv"
@@ -36,13 +35,13 @@ func main() {
 	}
 
 	// Create a ddrv manager
-	mgr, err := ddrv.NewManager(config.ChunkSize(), strings.Split(config.Webhooks(), ","))
+	driver, err := ddrv.New(config.Tokens(), config.Channels(), config.ChunkSize())
 	if err != nil {
-		log.Fatalf("ddrv: failed to open ddrv mgr :%v", err)
+		log.Fatalf("ddrv: failed to open ddrv driver :%v", err)
 	}
 
 	// Create FS object
-	fs := filesystem.New(mgr)
+	fs := filesystem.New(driver)
 
 	// New data provider
 	dataprovider.New()
@@ -59,7 +58,7 @@ func main() {
 	}
 	if config.HTTPAddr() != "" {
 		go func() {
-			httpServer := http.New(mgr)
+			httpServer := http.New(driver)
 			log.Printf("ddrv: starting HTTP server on : %s", config.HTTPAddr())
 			errCh <- httpServer.Listen(config.HTTPAddr())
 		}()

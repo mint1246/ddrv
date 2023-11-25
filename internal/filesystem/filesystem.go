@@ -67,7 +67,7 @@ func (fs *Fs) Open(name string) (afero.File, error) {
 	}
 	file := convertToAferoFile(f)
 	file.flag = os.O_RDONLY
-	file.mgr = fs.mgr
+	file.driver = fs.mgr
 	if !file.dir {
 		file.data, err = dataprovider.GetFileNodes(file.id)
 		if err != nil {
@@ -96,7 +96,7 @@ func (fs *Fs) OpenFile(name string, flag int, _ os.FileMode) (afero.File, error)
 
 	file := convertToAferoFile(f)
 	file.flag = flag
-	file.mgr = fs.mgr
+	file.driver = fs.mgr
 
 	if CheckFlag(os.O_TRUNC, flag) {
 		if err = dataprovider.DeleteFileNodes(file.id); err != nil {

@@ -71,4 +71,14 @@ var migrations = []migrate.Migration{
 		Up:   migrate.Queries([]string{`CREATE INDEX idx_node_file ON node (file);`}),
 		Down: migrate.Queries([]string{`DROP INDEX idx_node_file;`}),
 	},
+	{
+		ID:   4,
+		Up:   migrate.Queries([]string{`CREATE INDEX idx_node_size ON node (size);`}),
+		Down: migrate.Queries([]string{`DROP INDEX idx_node_size;`}),
+	},
+	{
+		ID:   5,
+		Up:   migrate.Queries([]string{`ALTER TABLE your_table_name ADD COLUMN mid VARCHAR(255), ADD COLUMN ex INT, ADD COLUMN is INT, ADD COLUMN hm VARCHAR(255);`}),
+		Down: migrate.Queries([]string{`ALTER TABLE your_table_name DROP COLUMN mid, DROP COLUMN ex, DROP COLUMN is, DROP COLUMN hm;`}),
+	},
 }
