@@ -21,7 +21,7 @@ It uses an FTP frontend as well as HTTP and WebDAV, allowing users to upload any
 - Navigate to the [Release page](https://github.com/forscht/ddrv/releases) and download the latest release suitable for your platform.
 - Decompress the binary file and initialize ddrv with the command provided below:
     ```shell
-    ./ddrv --dburl=postgres://user:pass@host:port/dbname?sslmode=false --webhooks=webhookURL1,webhookURL2
+    ./ddrv --db-url=postgres://user:pass@host:port/dbname?sslmode=disable --webhooks=webhookURL1,webhookURL2
     ```
 - An FTP server will launch on `ftp://localhost:2525`
 - An HTTP server will launch on `http://localhost:2526`
@@ -45,7 +45,7 @@ It uses an FTP frontend as well as HTTP and WebDAV, allowing users to upload any
   ```
 - Run the executable:
   ```shell
-  ./ddrv --dburl=postgres://user:pass@host:port/dbname?sslmode=false --webhooks=webhookURL1,webhookURL2
+  ./ddrv --db-url=postgres://user:pass@host:port/dbname?sslmode=disable --webhooks=webhookURL1,webhookURL2
   ```
 
 ### License
