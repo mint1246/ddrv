@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/forscht/ddrv/internal/config"
+	"github.com/forscht/ddrv/pkg/ddrv"
 )
 
 var provider Provider
@@ -14,9 +15,9 @@ type Provider interface {
 	create(name, parent string, isDir bool) (*File, error)
 	update(id, parent string, file *File) (*File, error)
 	delete(id, parent string) error
-	getFileNodes(id string) ([]*Node, error)
-	createFileNodes(id string, nodes []*Node) error
-	deleteFileNodes(id string) error
+	getNodes(id string) ([]ddrv.Node, error)
+	createNodes(id string, nodes []ddrv.Node) error
+	deleteNodes(id string) error
 	stat(path string) (*File, error)
 	ls(path string, limit int, offset int) ([]*File, error)
 	touch(path string) error
@@ -26,9 +27,9 @@ type Provider interface {
 	chMTime(path string, time time.Time) error
 }
 
-func New() {
+func New(drvr *ddrv.Driver) {
 	dbConStr := config.DbURL()
-	provider = NewPGProvider(dbConStr)
+	provider = NewPGProvider(dbConStr, drvr)
 }
 
 func Get(id, parent string) (*File, error) {
@@ -51,16 +52,16 @@ func Delete(id, parent string) error {
 	return provider.delete(id, parent)
 }
 
-func GetFileNodes(id string) ([]*Node, error) {
-	return provider.getFileNodes(id)
+func GetNodes(id string) ([]ddrv.Node, error) {
+	return provider.getNodes(id)
 }
 
-func CreateFileNodes(id string, nodes []*Node) error {
-	return provider.createFileNodes(id, nodes)
+func CreateNodes(id string, nodes []ddrv.Node) error {
+	return provider.createNodes(id, nodes)
 }
 
-func DeleteFileNodes(id string) error {
-	return provider.deleteFileNodes(id)
+func DeleteNodes(id string) error {
+	return provider.deleteNodes(id)
 }
 
 func Stat(path string) (*File, error) {

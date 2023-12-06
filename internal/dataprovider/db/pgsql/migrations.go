@@ -78,7 +78,12 @@ var migrations = []migrate.Migration{
 	},
 	{
 		ID:   5,
-		Up:   migrate.Queries([]string{`ALTER TABLE your_table_name ADD COLUMN mid VARCHAR(255), ADD COLUMN ex INT, ADD COLUMN is INT, ADD COLUMN hm VARCHAR(255);`}),
-		Down: migrate.Queries([]string{`ALTER TABLE your_table_name DROP COLUMN mid, DROP COLUMN ex, DROP COLUMN is, DROP COLUMN hm;`}),
+		Up:   migrate.Queries([]string{`ALTER TABLE node ADD COLUMN mid BIGINT, ADD COLUMN ex INT, ADD COLUMN "is" INT, ADD COLUMN hm VARCHAR(255);`}),
+		Down: migrate.Queries([]string{`ALTER TABLE node DROP COLUMN mid, DROP COLUMN ex, DROP COLUMN "is", DROP COLUMN hm;`}),
+	},
+	{
+		ID:   6,
+		Up:   migrate.Queries([]string{`CREATE UNIQUE INDEX IF NOT EXISTS idx_node_mid_unique ON node(mid);`}),
+		Down: migrate.Queries([]string{`DROP INDEX IF EXISTS idx_node_mid_unique;`}),
 	},
 }

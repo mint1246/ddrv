@@ -12,7 +12,7 @@ import (
 	"github.com/forscht/ddrv/pkg/ddrv"
 )
 
-func New(mgr *ddrv.Manager) *fiber.App {
+func New(driver *ddrv.Driver) *fiber.App {
 
 	// Initialize fiber app
 	app := fiber.New(config())
@@ -26,7 +26,7 @@ func New(mgr *ddrv.Manager) *fiber.App {
 	// Load Web routes
 	web.Load(app)
 	// Register API routes
-	api.Load(app, mgr)
+	api.Load(app, driver)
 
 	return app
 }

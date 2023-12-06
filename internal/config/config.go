@@ -13,7 +13,6 @@ type Config struct {
 	Password     string           `help:"Password for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"PASSWORD"`
 	HTTPAddr     string           `help:"Network address for the HTTP server to bind to" env:"HTTP_ADDR" default:":2526"`
 	HTTPGuest    bool             `help:"If true, enables read-only guest access to the HTTP file manager without login." env:"HTTP_GUEST" default:"false"`
-	WDAddr       string           `help:"Network address for the WebDav server to bind to" env:"WEBDAV_ADDR" default:":2527"`
 	DbURL        string           `help:"Connection string for the Postgres database. The format should be: postgres://user:password@localhost:port/database?sslmode=disable" env:"DATABASE_URL" required:""`
 	Tokens       string           `help:"Discord bot tokens separated by ','" env:"TOKENS" required:""`
 	Channels     string           `help:"Discord server channels separated by ','" env:"CHANNELS" required:""`
@@ -36,7 +35,6 @@ func Username() string     { return config.Username }
 func Password() string     { return config.Password }
 func HTTPAddr() string     { return config.HTTPAddr }
 func HTTPGuest() bool      { return config.HTTPGuest }
-func WDAddr() string       { return config.WDAddr }
 func DbURL() string        { return config.DbURL }
 func ChunkSize() int       { return config.ChunkSize }
 func AsyncWrite() bool     { return config.AsyncWrite }

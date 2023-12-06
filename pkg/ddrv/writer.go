@@ -9,21 +9,21 @@ import (
 type Writer struct {
 	rest      *Rest // Manager where Writer writes data
 	chunkSize int   // The maximum Size of a chunk
-	onChunk   func(chunk *Chunk)
+	onChunk   func(chunk Node)
 
 	idx     int            // Current position in the current chunk
 	closed  bool           // Whether the Writer has been closed
 	errCh   chan error     // Channel to send any errors that occur during writing
-	chunkCh chan *Chunk    // Channel to send chunks after they're written
+	chunkCh chan Node      // Channel to send chunks after they're written
 	pwriter *io.PipeWriter // PipeWriter for writing the current chunk
 }
 
 // NewWriter creates a new Writer with the given chunk Size and manager.
-func NewWriter(onChunk func(chunk *Chunk), chunkSize int, rest *Rest) io.WriteCloser {
+func NewWriter(onChunk func(chunk Node), chunkSize int, rest *Rest) io.WriteCloser {
 	w := &Writer{
 		rest:      rest,
 		errCh:     make(chan error),
-		chunkCh:   make(chan *Chunk),
+		chunkCh:   make(chan Node),
 		onChunk:   onChunk,
 		chunkSize: chunkSize,
 	}
@@ -47,7 +47,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 			if err != nil {
 				return total, err
 			}
-			if err := w.flush(true); err != nil {
+			if err = w.flush(true); err != nil {
 				return total, err
 			}
 			p = p[n:]
@@ -104,7 +104,7 @@ func (w *Writer) next() {
 				w.errCh <- err
 			} else {
 				w.idx = 0
-				w.chunkCh <- chunk
+				w.chunkCh <- *chunk
 			}
 		}()
 	}

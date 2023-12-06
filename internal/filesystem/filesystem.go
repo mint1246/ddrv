@@ -21,11 +21,11 @@ var (
 )
 
 type Fs struct {
-	mgr *ddrv.Manager
+	driver *ddrv.Driver
 }
 
-func New(mgr *ddrv.Manager) afero.Fs {
-	return NewLogFs(&Fs{mgr: mgr})
+func New(driver *ddrv.Driver) afero.Fs {
+	return NewLogFs(&Fs{driver})
 }
 
 func (fs *Fs) Name() string                        { return "LogFs" }
@@ -67,9 +67,9 @@ func (fs *Fs) Open(name string) (afero.File, error) {
 	}
 	file := convertToAferoFile(f)
 	file.flag = os.O_RDONLY
-	file.driver = fs.mgr
+	file.driver = fs.driver
 	if !file.dir {
-		file.data, err = dataprovider.GetFileNodes(file.id)
+		file.data, err = dataprovider.GetNodes(file.id)
 		if err != nil {
 			return nil, err
 		}
@@ -96,16 +96,16 @@ func (fs *Fs) OpenFile(name string, flag int, _ os.FileMode) (afero.File, error)
 
 	file := convertToAferoFile(f)
 	file.flag = flag
-	file.driver = fs.mgr
+	file.driver = fs.driver
 
 	if CheckFlag(os.O_TRUNC, flag) {
-		if err = dataprovider.DeleteFileNodes(file.id); err != nil {
+		if err = dataprovider.DeleteNodes(file.id); err != nil {
 			return nil, err
 		}
 	}
 
 	if !file.dir {
-		file.data, err = dataprovider.GetFileNodes(file.id)
+		file.data, err = dataprovider.GetNodes(file.id)
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,6 @@ package ddrv
 // Rest must retry on error code 429 as well.
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -42,7 +41,7 @@ func (l *Limiter) getBucket(path string, store bool) *bucket {
 	return b
 }
 
-func (l *Limiter) Acquire(path string) error {
+func (l *Limiter) Acquire(path string) {
 	now := time.Now()
 
 	// Check global rate limit
@@ -51,9 +50,6 @@ func (l *Limiter) Acquire(path string) error {
 	}
 
 	b := l.getBucket(path, true)
-	if b == nil {
-		return fmt.Errorf("failed to acquire rate limit bucket")
-	}
 
 	// Check bucket-specific rate limit
 	if b.remaining == 0 && b.reset.After(now) {
@@ -65,8 +61,6 @@ func (l *Limiter) Acquire(path string) error {
 		b.remaining--
 		b.lock.Unlock()
 	}
-
-	return nil
 }
 
 func (l *Limiter) Release(path string, headers http.Header) {

@@ -13,7 +13,6 @@ import (
 	"github.com/forscht/ddrv/internal/filesystem"
 	"github.com/forscht/ddrv/internal/ftp"
 	"github.com/forscht/ddrv/internal/http"
-	"github.com/forscht/ddrv/internal/webdav"
 	"github.com/forscht/ddrv/pkg/ddrv"
 )
 
@@ -29,11 +28,6 @@ func main() {
 		"version": fmt.Sprintf("ddrv %s", version),
 	})
 
-	// Make sure chunkSize is below 25MB
-	if config.ChunkSize() > 25*1024*1024 || config.ChunkSize() < 0 {
-		log.Fatalf("ddrv: invalid chunkSize %d", config.ChunkSize())
-	}
-
 	// Create a ddrv manager
 	driver, err := ddrv.New(config.Tokens(), config.Channels(), config.ChunkSize())
 	if err != nil {
@@ -44,13 +38,13 @@ func main() {
 	fs := filesystem.New(driver)
 
 	// New data provider
-	dataprovider.New()
+	dataprovider.New(driver)
 
 	errCh := make(chan error)
 
+	// Create and start ftp server
 	if config.FTPAddr() != "" {
 		go func() {
-			// Create and start ftp server
 			ftpServer := ftp.New(fs)
 			log.Printf("ddrv: starting FTP server on : %s", config.FTPAddr())
 			errCh <- ftpServer.ListenAndServe()
@@ -61,14 +55,6 @@ func main() {
 			httpServer := http.New(driver)
 			log.Printf("ddrv: starting HTTP server on : %s", config.HTTPAddr())
 			errCh <- httpServer.Listen(config.HTTPAddr())
-		}()
-	}
-
-	if config.WDAddr() != "" {
-		go func() {
-			webdavServer := webdav.New(fs)
-			log.Printf("ddrv: starting WEBDAV server on : %s", config.WDAddr())
-			errCh <- webdavServer.ListenAndServe()
 		}()
 	}
 

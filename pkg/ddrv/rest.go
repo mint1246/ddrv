@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,11 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var baseURL = "https://discord.com/api/v9"
+var baseURL = "https://discord.com/api/v10"
 var UserAgent = "PostmanRuntime/7.35.0"
 
 type Rest struct {
-	nitro        bool
 	channels     []string
 	lastChIdx    int
 	limiter      *Limiter
@@ -26,10 +26,9 @@ type Rest struct {
 	lastTokenIdx int
 }
 
-func NewRest(tokens []string, channels []string, nitro bool) *Rest {
+func NewRest(tokens []string, channels []string) *Rest {
 	return &Rest{
 		client:       &http.Client{Timeout: 30 * time.Second},
-		nitro:        nitro,
 		channels:     channels,
 		limiter:      NewLimiter(),
 		tokens:       tokens,
@@ -44,10 +43,9 @@ func (r *Rest) request(method string, path string, token string, body io.Reader)
 	if err != nil {
 		return nil, err
 	}
-
 	req.Header.Add("User-Agent", UserAgent)
 	if token != "" {
-		req.Header.Add("Authorization", token)
+		req.Header.Add("Authorization", "Bot "+token)
 	}
 
 	return req, nil
@@ -77,11 +75,11 @@ func (r *Rest) channel() string {
 	return channel
 }
 
-func (r *Rest) GetMessages(channelId string, messageId string, query string) (*[]Message, error) {
+func (r *Rest) GetMessages(channelId string, messageId int64, query string, messages *[]Message) error {
 	token := r.token()
 	var path string
-	if messageId != "" && query != "" {
-		path = fmt.Sprintf("/channels/%s/messages?limit=100&%s=%s", channelId, query, messageId)
+	if messageId != 0 && query != "" {
+		path = fmt.Sprintf("/channels/%s/messages?limit=100&%s=%d", channelId, query, messageId)
 	} else {
 		path = fmt.Sprintf("/channels/%s/messages?limit=100", channelId)
 	}
@@ -90,13 +88,11 @@ func (r *Rest) GetMessages(channelId string, messageId string, query string) (*[
 	// Create request
 	req, err := r.request(http.MethodGet, path, token, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Try to acquire lock
-	if err := r.limiter.Acquire(bucketPath); err != nil {
-		return nil, err
-	}
+	r.limiter.Acquire(bucketPath)
 
 	// Here make HTTP call
 	resp, err := r.client.Do(req)
@@ -106,30 +102,29 @@ func (r *Rest) GetMessages(channelId string, messageId string, query string) (*[
 	}
 	if err != nil {
 		r.limiter.Release(bucketPath, nil)
-		return nil, err
+		return err
 	}
 
 	// Retry request on 429 or >500
 	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
-		return r.GetMessages(channelId, messageId, query)
+		return r.GetMessages(channelId, messageId, query, messages)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("rest getmessages: expected status code %d - received %d", http.StatusOK, resp.StatusCode)
+		return fmt.Errorf("rest getmessages: expected status code %d - received %d", http.StatusOK, resp.StatusCode)
 	}
 	// read and parse the response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var m []Message
-	if err := json.Unmarshal(respBody, &m); err != nil {
-		return nil, err
+	if err := json.Unmarshal(respBody, messages); err != nil {
+		return err
 	}
-	return &m, nil
+	return nil
 }
 
 // CreateAttachment uploads a file to the Discord channel using the webhook.
-func (r *Rest) CreateAttachment(reader io.Reader) (*Chunk, error) {
+func (r *Rest) CreateAttachment(reader io.Reader) (*Node, error) {
 	token := r.token()
 	channelId := r.channel()
 	path := fmt.Sprintf("/channels/%s/messages", channelId)
@@ -143,9 +138,7 @@ func (r *Rest) CreateAttachment(reader io.Reader) (*Chunk, error) {
 	}
 	req.Header.Add("Content-Type", contentType)
 	// Try to acquire lock
-	if err := r.limiter.Acquire(bucketPath); err != nil {
-		return nil, err
-	}
+	r.limiter.Acquire(bucketPath)
 
 	// Here make HTTP call
 	resp, err := r.client.Do(req)
@@ -168,19 +161,20 @@ func (r *Rest) CreateAttachment(reader io.Reader) (*Chunk, error) {
 	}
 
 	var m Message
-	if err := json.Unmarshal(respBody, &m); err != nil {
+	if err = json.Unmarshal(respBody, &m); err != nil {
 		return nil, err
 	}
 	// clean url and extract ex,is and hm
 	att := m.Attachments[0]
 	att.URL, att.Ex, att.Is, att.Hm = decodeAttachmentURL(att.URL)
+	att.MId, _ = strconv.ParseInt(m.Id, 10, 64)
 	// Return the first attachment from the response
 	return &att, nil
 }
 
-func (r *Rest) ReadAttachment(att *Chunk, start int, end int) (io.ReadCloser, error) {
+func (r *Rest) ReadAttachment(att *Node, start int, end int) (io.ReadCloser, error) {
 	path := encodeAttachmentURL(att.URL, att.Ex, att.Is, att.Hm)
-	req, err := r.request(http.MethodGet, path, "", nil)
+	req, err := http.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}

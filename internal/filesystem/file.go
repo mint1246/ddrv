@@ -20,11 +20,11 @@ type File struct {
 
 	flag         int
 	off          int64
-	data         []*dataprovider.Node
+	data         []ddrv.Node
 	readDirCount int
 
 	driver      *ddrv.Driver
-	chunks      []*ddrv.Chunk
+	chunks      []ddrv.Node
 	streamWrite io.WriteCloser
 	streamRead  io.ReadCloser
 }
@@ -134,16 +134,16 @@ func (f *File) Write(p []byte) (int, error) {
 
 	if f.streamWrite == nil {
 		if CheckFlag(os.O_APPEND, f.flag) {
-			if err := dataprovider.DeleteFileNodes(f.id); err != nil {
+			if err := dataprovider.DeleteNodes(f.id); err != nil {
 				return 0, err
 			}
 		}
 		if config.AsyncWrite() {
-			f.streamWrite = f.driver.NewNWriter(func(chunk *ddrv.Chunk) {
+			f.streamWrite = f.driver.NewNWriter(func(chunk ddrv.Node) {
 				f.chunks = append(f.chunks, chunk)
 			})
 		} else {
-			f.streamWrite = f.driver.NewWriter(func(chunk *ddrv.Chunk) {
+			f.streamWrite = f.driver.NewWriter(func(chunk ddrv.Node) {
 				f.chunks = append(f.chunks, chunk)
 			})
 		}
@@ -198,11 +198,7 @@ func (f *File) Close() error {
 		if len(f.chunks) == 1 && f.chunks[0].Size == 0 {
 			return nil
 		}
-		nodes := make([]*dataprovider.Node, len(f.chunks))
-		for i, chunk := range f.chunks {
-			nodes[i] = convertToNode(chunk)
-		}
-		err := dataprovider.CreateFileNodes(f.id, nodes)
+		err := dataprovider.CreateNodes(f.id, f.chunks)
 		if err != nil {
 			return err
 		}
@@ -219,9 +215,9 @@ func (f *File) Close() error {
 }
 
 func (f *File) openReadStream(startAt int64) error {
-	chunks := make([]ddrv.Chunk, len(f.data))
+	chunks := make([]ddrv.Node, len(f.data))
 	for i, node := range f.data {
-		chunks[i] = ddrv.Chunk{URL: node.URL, Size: node.Size}
+		chunks[i] = ddrv.Node{URL: node.URL, Size: node.Size}
 	}
 
 	stream, err := f.driver.NewReader(chunks, startAt)
@@ -230,8 +226,4 @@ func (f *File) openReadStream(startAt int64) error {
 	}
 	f.streamRead = stream
 	return nil
-}
-
-func convertToNode(chunk *ddrv.Chunk) *dataprovider.Node {
-	return &dataprovider.Node{URL: chunk.URL, Size: chunk.Size, MId: chunk.MId, Ex: chunk.Ex, Is: chunk.Is, Hm: chunk.Hm}
 }

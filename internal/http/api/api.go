@@ -10,7 +10,7 @@ import (
 
 var validate = validator.New()
 
-func Load(app *fiber.App, mgr *ddrv.Manager) {
+func Load(app *fiber.App, driver *ddrv.Driver) {
 
 	// create api API group
 	api := app.Group("/api")
@@ -35,13 +35,13 @@ func Load(app *fiber.App, mgr *ddrv.Manager) {
 	api.Delete("/directories/:id<guid>", DelDirHandler())
 
 	// Load file middlewares
-	api.Post("/directories/:dirId<guid>/files", CreateFileHandler(mgr))
+	api.Post("/directories/:dirId<guid>/files", CreateFileHandler(driver))
 	api.Get("/directories/:dirId<guid>/files/:id<guid>", GetFileHandler())
 	api.Put("/directories/:dirId<guid>/files/:id<guid>", UpdateFileHandler())
 	api.Delete("/directories/:dirId<guid>/files/:id<guid>", DelFileHandler())
 
 	// Just like discord, we will not authorize file endpoints
 	// so that it can work with download managers or media players
-	app.Get("/files/:id", DownloadFileHandler(mgr))
-	app.Get("/files/:id/:fname", DownloadFileHandler(mgr))
+	app.Get("/files/:id", DownloadFileHandler(driver))
+	app.Get("/files/:id/:fname", DownloadFileHandler(driver))
 }

@@ -3,8 +3,13 @@ package ddrv
 import (
 	"log"
 	"net/url"
+	"regexp"
 	"strconv"
 )
+
+// This pattern matches the entire 'https://cdn.discordapp.com/attachments/' part
+// and then captures a sequence of digits
+var discordCDNRe = regexp.MustCompile(`https://cdn\.discordapp\.com/attachments/(\d+)/`)
 
 // decode parses the input URL and extracts the query parameters.
 // It returns the cleaned URL, `ex` and `is` as integers, `hm` as a string, and an error if any.
@@ -39,7 +44,7 @@ func decodeAttachmentURL(inputURL string) (string, int, int, string) {
 	return cleanedURL, ex, is, hm
 }
 
-// encode takes a base URL, `ex`, `is`, and `hm` as inputs, and returns the modified URL and the `channelId`.
+// encode takes a base URL, `ex`, `is`, and `hm` as inputs, and returns the modified URL.
 func encodeAttachmentURL(baseURL string, ex int, is int, hm string) string {
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -61,4 +66,15 @@ func encodeAttachmentURL(baseURL string, ex int, is int, hm string) string {
 	encodedURL := parsedURL.String()
 
 	return encodedURL
+}
+
+func extractChannelId(url string) string {
+	// Find the first match and extract the captured group
+	matches := discordCDNRe.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		log.Fatalf("extractChannelId : failed to extract channelId : URL -> %s", url)
+	}
+
+	// The channelId should be the second last part of the URL
+	return matches[1]
 }

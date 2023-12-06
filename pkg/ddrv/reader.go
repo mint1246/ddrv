@@ -5,7 +5,7 @@ import "io"
 // Reader is a structure that manages the reading of a sequence of Chunks.
 // It reads chunks in order, closing each one after it's Read and moving on to the next.
 type Reader struct {
-	chunks []Chunk       // The list of chunks to be Read.
+	chunks []Node        // The list of chunks to be Read.
 	curIdx int           // Index of the chunk that is currently being Read.
 	closed bool          // Indicates whether the Reader has been closed.
 	rest   *Rest         // rest object provides access to the chunks.
@@ -14,7 +14,7 @@ type Reader struct {
 }
 
 // NewReader creates new Reader instance which implements io.ReadCloser.
-func NewReader(chunks []Chunk, pos int64, rest *Rest) (io.ReadCloser, error) {
+func NewReader(chunks []Node, pos int64, rest *Rest) (io.ReadCloser, error) {
 	r := &Reader{chunks: chunks, pos: pos, rest: rest}
 	// Calculate Start and End for each part
 	var offset int64

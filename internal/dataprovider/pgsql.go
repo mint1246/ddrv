@@ -12,17 +12,21 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/forscht/ddrv/internal/dataprovider/db/pgsql"
+	"github.com/forscht/ddrv/pkg/ddrv"
+	"github.com/forscht/ddrv/pkg/locker"
 	"github.com/forscht/ddrv/pkg/ns"
 )
 
 const RootDirId = "11111111-1111-1111-1111-111111111111"
 
 type PGProvider struct {
-	db *sql.DB
-	sg *snowflake.Node
+	db     *sql.DB
+	sg     *snowflake.Node
+	drvr   *ddrv.Driver
+	locker *locker.Locker
 }
 
-func NewPGProvider(dbURL string) Provider {
+func NewPGProvider(dbURL string, driver *ddrv.Driver) Provider {
 	// Create database connection
 	dbConn := pgsql.New(dbURL, false)
 	sg, err := snowflake.NewNode(int64(rand.Intn(1023)))
@@ -30,7 +34,7 @@ func NewPGProvider(dbURL string) Provider {
 		log.Fatalf("failed to create snowflake node %v", err)
 	}
 
-	return &PGProvider{dbConn, sg}
+	return &PGProvider{dbConn, sg, driver, locker.New()}
 }
 
 func (pgp *PGProvider) get(id, parent string) (*File, error) {
@@ -165,27 +169,45 @@ func (pgp *PGProvider) delete(id, parent string) error {
 	return nil
 }
 
-func (pgp *PGProvider) getFileNodes(id string) ([]*Node, error) {
-	nodes := make([]*Node, 0)
-	rows, err := pgp.db.Query("SELECT url, size FROM node where file=$1 ORDER BY id ASC", id)
+func (pgp *PGProvider) getNodes(id string) ([]ddrv.Node, error) {
+	pgp.locker.Acquire(id)
+	defer pgp.locker.Release(id)
+
+	nodes := make([]ddrv.Node, 0)
+	rows, err := pgp.db.Query(`SELECT url, size, mid, ex, "is", hm FROM node where file=$1 ORDER BY id ASC`, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	expired := make([]*ddrv.Node, 0)
+	currentTimestamp := int(time.Now().Unix())
 	for rows.Next() {
-		node := new(Node)
-		err := rows.Scan(&node.URL, &node.Size)
+		var node ddrv.Node
+		err = rows.Scan(&node.URL, &node.Size, &node.MId, &node.Ex, &node.Is, &node.Hm)
 		if err != nil {
 			return nil, err
 		}
 		nodes = append(nodes, node)
+		if currentTimestamp > node.Ex {
+			expired = append(expired, &node)
+		}
 	}
-
+	if err = pgp.drvr.UpdateNodes(expired); err != nil {
+		return nil, err
+	}
+	for _, node := range expired {
+		if _, err = pgp.db.Exec(
+			`UPDATE node SET ex=$1, "is"=$2, hm=$3 WHERE mid=$4`,
+			node.Ex, node.Is, node.Hm, node.MId,
+		); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
-func (pgp *PGProvider) createFileNodes(fid string, nodes []*Node) error {
+func (pgp *PGProvider) createNodes(fid string, nodes []ddrv.Node) error {
+
 	tx, err := pgp.db.Begin()
 	if err != nil {
 		return err
@@ -195,39 +217,41 @@ func (pgp *PGProvider) createFileNodes(fid string, nodes []*Node) error {
 
 	// Build the INSERT query with multiple values
 	var values []interface{}
-	query := `INSERT INTO node (id, file, url, size) VALUES `
-	placeholderCounter := 1
+	query := `INSERT INTO node (id, file, url, size, mid, ex, "is", hm) VALUES`
+	phc := 1 // placeHolderCounter
 	for _, node := range nodes {
 		id := pgp.sg.Generate()
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d),", placeholderCounter, placeholderCounter+1, placeholderCounter+2, placeholderCounter+3)
-		values = append(values, id, fid, node.URL, node.Size)
-		placeholderCounter += 4
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),", phc, phc+1, phc+2, phc+3, phc+4, phc+5, phc+6, phc+7)
+		values = append(values, id, fid, node.URL, node.Size, node.MId, node.Ex, node.Is, node.Hm)
+		phc += 8
 	}
 	// Remove the last comma and execute the query
 	query = query[:len(query)-1]
-	if _, err := tx.Exec(query, values...); err != nil {
+
+	if _, err = tx.Exec(query, values...); err != nil {
 		return err
 	}
 
 	// Update mtime every time something is written on file
-	if _, err := tx.Exec("UPDATE fs SET mtime = NOW() WHERE id=$1", fid); err != nil {
+	if _, err = tx.Exec("UPDATE fs SET mtime = NOW() WHERE id=$1", fid); err != nil {
 		return err
 	}
 	// If everything went well, commit the transaction
-	if err := tx.Commit(); err != nil {
+	if err = tx.Commit(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (pgp *PGProvider) deleteFileNodes(fid string) error {
+func (pgp *PGProvider) deleteNodes(fid string) error {
 	_, err := pgp.db.Exec("DELETE FROM node WHERE file=$1", fid)
 	return err
 }
 
 func (pgp *PGProvider) stat(name string) (*File, error) {
 	file := new(File)
-	err := pgp.db.QueryRow("SELECT id,name,dir,size,mtime FROM stat($1)", name).
+	err := pgp.db.QueryRow("SELECT id, name, dir, size, mtime FROM stat($1)", name).
 		Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -302,7 +326,7 @@ func pqErrToOs(err error) error {
 			return ErrInvalidParent
 		case "23505": // Unique violation error code
 			return ErrExist
-		// Foreign key constraint violation occurred -> on createFileNodes
+		// Foreign key constraint violation occurred -> on createNodes
 		// This error occurs when FTP clients try to do open -> remove -> close
 		// Linux in case of os.OpenFile -> os.Remove -> file.Close ignores error, so we will too
 		case "23503": //

@@ -18,19 +18,19 @@ import (
 type NWriter struct {
 	rest      *Rest // Manager where Writer writes data
 	chunkSize int   // The maximum Size of a chunk
-	onChunk   func(chunk *Chunk)
+	onChunk   func(chunk Node)
 
 	mu sync.Mutex
 	wg sync.WaitGroup
 
 	closed       bool // Whether the Writer has been closed
 	err          error
-	chunks       []*Chunk
+	chunks       []Node
 	pwriter      *io.PipeWriter // PipeWriter for writing the current chunk
 	chunkCounter int64
 }
 
-func NewNWriter(onChunk func(chunk *Chunk), chunkSize int, rest *Rest) io.WriteCloser {
+func NewNWriter(onChunk func(chunk Node), chunkSize int, rest *Rest) io.WriteCloser {
 	reader, writer := io.Pipe()
 	w := &NWriter{
 		rest:      rest,
@@ -72,7 +72,7 @@ func (w *NWriter) Close() error {
 			w.onChunk(chunk)
 		}
 	}
-	return nil
+	return w.err
 }
 
 func (w *NWriter) startWorkers(reader io.Reader) {
@@ -96,7 +96,7 @@ func (w *NWriter) startWorkers(reader io.Reader) {
 					}
 					w.mu.Lock()
 					attachment.Start = cIdx
-					w.chunks = append(w.chunks, attachment)
+					w.chunks = append(w.chunks, *attachment)
 					w.mu.Unlock()
 				}
 				if err != nil {

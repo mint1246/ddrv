@@ -14,13 +14,3 @@ type File struct {
 	Parent ns.NullString `json:"parent,omitempty" validate:"required,uuid"`
 	MTime  time.Time     `json:"mtime"`
 }
-
-type Node struct {
-	URL  string
-	Size int
-	Iv   string
-	MId  string
-	Ex   int
-	Is   int
-	Hm   string
-}
