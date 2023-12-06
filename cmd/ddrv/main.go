@@ -9,7 +9,8 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/forscht/ddrv/internal/config"
-	"github.com/forscht/ddrv/internal/dataprovider"
+	dp "github.com/forscht/ddrv/internal/dataprovider"
+	"github.com/forscht/ddrv/internal/dataprovider/pgsql"
 	"github.com/forscht/ddrv/internal/filesystem"
 	"github.com/forscht/ddrv/internal/ftp"
 	"github.com/forscht/ddrv/internal/http"
@@ -37,8 +38,8 @@ func main() {
 	// Create FS object
 	fs := filesystem.New(driver)
 
-	// New data provider
-	dataprovider.New(driver)
+	// Load data provider
+	dp.Load(pgsql.New(config.DbURL(), driver))
 
 	errCh := make(chan error)
 

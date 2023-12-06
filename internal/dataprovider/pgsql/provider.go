@@ -1,4 +1,4 @@
-package dataprovider
+package pgsql
 
 import (
 	"database/sql"
@@ -11,7 +11,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/lib/pq"
 
-	"github.com/forscht/ddrv/internal/dataprovider/db/pgsql"
+	"github.com/forscht/ddrv/internal/dataprovider"
 	"github.com/forscht/ddrv/pkg/ddrv"
 	"github.com/forscht/ddrv/pkg/locker"
 	"github.com/forscht/ddrv/pkg/ns"
@@ -22,13 +22,13 @@ const RootDirId = "11111111-1111-1111-1111-111111111111"
 type PGProvider struct {
 	db     *sql.DB
 	sg     *snowflake.Node
-	drvr   *ddrv.Driver
+	driver *ddrv.Driver
 	locker *locker.Locker
 }
 
-func NewPGProvider(dbURL string, driver *ddrv.Driver) Provider {
+func New(dbURL string, driver *ddrv.Driver) *PGProvider {
 	// Create database connection
-	dbConn := pgsql.New(dbURL, false)
+	dbConn := NewDb(dbURL, false)
 	sg, err := snowflake.NewNode(int64(rand.Intn(1023)))
 	if err != nil {
 		log.Fatalf("failed to create snowflake node %v", err)
@@ -37,8 +37,8 @@ func NewPGProvider(dbURL string, driver *ddrv.Driver) Provider {
 	return &PGProvider{dbConn, sg, driver, locker.New()}
 }
 
-func (pgp *PGProvider) get(id, parent string) (*File, error) {
-	file := new(File)
+func (pgp *PGProvider) Get(id, parent string) (*dataprovider.File, error) {
+	file := new(dataprovider.File)
 	var err error
 	if id == "" {
 		id = RootDirId
@@ -65,7 +65,7 @@ func (pgp *PGProvider) get(id, parent string) (*File, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotExist
+			return nil, dataprovider.ErrNotExist
 		}
 		return nil, err
 	}
@@ -73,15 +73,15 @@ func (pgp *PGProvider) get(id, parent string) (*File, error) {
 	return file, nil
 }
 
-func (pgp *PGProvider) getChild(id string) ([]*File, error) {
-	_, err := pgp.get(id, "")
+func (pgp *PGProvider) GetChild(id string) ([]*dataprovider.File, error) {
+	_, err := pgp.Get(id, "")
 	if err != nil {
 		return nil, err
 	}
 	if id == "" {
 		id = RootDirId
 	}
-	files := make([]*File, 0)
+	files := make([]*dataprovider.File, 0)
 	rows, err := pgp.db.Query(`
 				SELECT fs.id, fs.name, fs.dir, parsesize(SUM(node.size)) AS size, fs.parent, fs.mtime
 				FROM fs
@@ -96,7 +96,7 @@ func (pgp *PGProvider) getChild(id string) ([]*File, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		child := new(File)
+		child := new(dataprovider.File)
 		if err := rows.Scan(&child.ID, &child.Name, &child.Dir, &child.Size, &child.Parent, &child.MTime); err != nil {
 			return nil, err
 		}
@@ -105,15 +105,15 @@ func (pgp *PGProvider) getChild(id string) ([]*File, error) {
 	return files, nil
 }
 
-func (pgp *PGProvider) create(name, parent string, dir bool) (*File, error) {
-	parentDir, err := pgp.get(parent, "")
+func (pgp *PGProvider) Create(name, parent string, dir bool) (*dataprovider.File, error) {
+	parentDir, err := pgp.Get(parent, "")
 	if err != nil {
 		return nil, err
 	}
 	if !parentDir.Dir {
-		return nil, ErrInvalidParent
+		return nil, dataprovider.ErrInvalidParent
 	}
-	file := &File{Name: name, Parent: ns.NullString(parent)}
+	file := &dataprovider.File{Name: name, Parent: ns.NullString(parent)}
 	if err := pgp.db.QueryRow("INSERT INTO fs (name,dir,parent) VALUES($1,$2,$3) RETURNING id, dir, mtime", name, dir, parent).
 		Scan(&file.ID, &file.Dir, &file.MTime); err != nil {
 		return nil, pqErrToOs(err) // Handle already exists
@@ -121,9 +121,9 @@ func (pgp *PGProvider) create(name, parent string, dir bool) (*File, error) {
 	return file, nil
 }
 
-func (pgp *PGProvider) update(id, parent string, file *File) (*File, error) {
+func (pgp *PGProvider) Update(id, parent string, file *dataprovider.File) (*dataprovider.File, error) {
 	if id == RootDirId {
-		return nil, ErrPermission
+		return nil, dataprovider.ErrPermission
 	}
 
 	var err error
@@ -140,16 +140,16 @@ func (pgp *PGProvider) update(id, parent string, file *File) (*File, error) {
 	}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotExist
+			return nil, dataprovider.ErrNotExist
 		}
 		return nil, pqErrToOs(err) // Handle already exists
 	}
 	return file, nil
 }
 
-func (pgp *PGProvider) delete(id, parent string) error {
+func (pgp *PGProvider) Delete(id, parent string) error {
 	if id == RootDirId {
-		return ErrPermission
+		return dataprovider.ErrPermission
 	}
 	var res sql.Result
 	var err error
@@ -164,12 +164,12 @@ func (pgp *PGProvider) delete(id, parent string) error {
 	}
 	rAffected, _ := res.RowsAffected()
 	if rAffected == 0 {
-		return ErrNotExist
+		return dataprovider.ErrNotExist
 	}
 	return nil
 }
 
-func (pgp *PGProvider) getNodes(id string) ([]ddrv.Node, error) {
+func (pgp *PGProvider) GetNodes(id string) ([]ddrv.Node, error) {
 	pgp.locker.Acquire(id)
 	defer pgp.locker.Release(id)
 
@@ -192,7 +192,7 @@ func (pgp *PGProvider) getNodes(id string) ([]ddrv.Node, error) {
 			expired = append(expired, &node)
 		}
 	}
-	if err = pgp.drvr.UpdateNodes(expired); err != nil {
+	if err = pgp.driver.UpdateNodes(expired); err != nil {
 		return nil, err
 	}
 	for _, node := range expired {
@@ -206,7 +206,7 @@ func (pgp *PGProvider) getNodes(id string) ([]ddrv.Node, error) {
 	return nodes, nil
 }
 
-func (pgp *PGProvider) createNodes(fid string, nodes []ddrv.Node) error {
+func (pgp *PGProvider) CreateNodes(fid string, nodes []ddrv.Node) error {
 
 	tx, err := pgp.db.Begin()
 	if err != nil {
@@ -244,25 +244,25 @@ func (pgp *PGProvider) createNodes(fid string, nodes []ddrv.Node) error {
 	return nil
 }
 
-func (pgp *PGProvider) deleteNodes(fid string) error {
+func (pgp *PGProvider) DeleteNodes(fid string) error {
 	_, err := pgp.db.Exec("DELETE FROM node WHERE file=$1", fid)
 	return err
 }
 
-func (pgp *PGProvider) stat(name string) (*File, error) {
-	file := new(File)
+func (pgp *PGProvider) Stat(name string) (*dataprovider.File, error) {
+	file := new(dataprovider.File)
 	err := pgp.db.QueryRow("SELECT id, name, dir, size, mtime FROM stat($1)", name).
 		Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotExist
+			return nil, dataprovider.ErrNotExist
 		}
 		return nil, pqErrToOs(err)
 	}
 	return file, nil
 }
 
-func (pgp *PGProvider) ls(name string, limit int, offset int) ([]*File, error) {
+func (pgp *PGProvider) Ls(name string, limit int, offset int) ([]*dataprovider.File, error) {
 	var rows *sql.Rows
 	var err error
 	if limit > 0 {
@@ -275,9 +275,9 @@ func (pgp *PGProvider) ls(name string, limit int, offset int) ([]*File, error) {
 	}
 	defer rows.Close()
 
-	entries := make([]*File, 0)
+	entries := make([]*dataprovider.File, 0)
 	for rows.Next() {
-		file := new(File)
+		file := new(dataprovider.File)
 		if err = rows.Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime); err != nil {
 			return nil, err
 		}
@@ -286,27 +286,27 @@ func (pgp *PGProvider) ls(name string, limit int, offset int) ([]*File, error) {
 	return entries, nil
 }
 
-func (pgp *PGProvider) touch(name string) error {
+func (pgp *PGProvider) Touch(name string) error {
 	_, err := pgp.db.Exec("SELECT FROM touch($1)", name)
 	return pqErrToOs(err)
 }
 
-func (pgp *PGProvider) mkdir(name string) error {
+func (pgp *PGProvider) Mkdir(name string) error {
 	_, err := pgp.db.Exec("SELECT mkdir($1)", name)
 	return pqErrToOs(err)
 }
 
-func (pgp *PGProvider) rm(name string) error {
+func (pgp *PGProvider) Rm(name string) error {
 	_, err := pgp.db.Exec("SELECT rm($1)", name)
 	return pqErrToOs(err)
 }
 
-func (pgp *PGProvider) mv(name, newname string) error {
+func (pgp *PGProvider) Mv(name, newname string) error {
 	_, err := pgp.db.Exec("SELECT mv($1, $2)", name, newname)
 	return pqErrToOs(err)
 }
 
-func (pgp *PGProvider) chMTime(name string, mtime time.Time) error {
+func (pgp *PGProvider) CHTime(name string, mtime time.Time) error {
 	_, err := pgp.db.Exec("UPDATE fs SET mtime = $1 WHERE id=(SELECT id FROM stat($2));", mtime, name)
 	return pqErrToOs(err)
 }
@@ -317,16 +317,16 @@ func pqErrToOs(err error) error {
 	if errors.As(err, &pqErr) {
 		switch pqErr.Code {
 		case "P0001": // root dir permission issue
-			return ErrPermission
+			return dataprovider.ErrPermission
 		case "P0002":
-			return ErrNotExist
+			return dataprovider.ErrNotExist
 		case "P0003":
-			return ErrExist
+			return dataprovider.ErrExist
 		case "P0004": // is not a directory
-			return ErrInvalidParent
+			return dataprovider.ErrInvalidParent
 		case "23505": // Unique violation error code
-			return ErrExist
-		// Foreign key constraint violation occurred -> on createNodes
+			return dataprovider.ErrExist
+		// Foreign key constraint violation occurred -> on CreateNodes
 		// This error occurs when FTP clients try to do open -> remove -> close
 		// Linux in case of os.OpenFile -> os.Remove -> file.Close ignores error, so we will too
 		case "23503": //

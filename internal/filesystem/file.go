@@ -93,7 +93,7 @@ func (f *File) Read(p []byte) (n int, err error) {
 		return 0, ErrIsDir
 	}
 	if f.streamRead == nil {
-		if err := f.openReadStream(0); err != nil {
+		if err = f.openReadStream(0); err != nil {
 			return 0, err
 		}
 	}
@@ -215,12 +215,7 @@ func (f *File) Close() error {
 }
 
 func (f *File) openReadStream(startAt int64) error {
-	chunks := make([]ddrv.Node, len(f.data))
-	for i, node := range f.data {
-		chunks[i] = ddrv.Node{URL: node.URL, Size: node.Size}
-	}
-
-	stream, err := f.driver.NewReader(chunks, startAt)
+	stream, err := f.driver.NewReader(f.data, startAt)
 	if err != nil {
 		return err
 	}

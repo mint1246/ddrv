@@ -60,7 +60,7 @@ func CreateFileHandler(driver *ddrv.Driver) fiber.Handler {
 			}
 			if part.FormName() == "file" {
 				fileName := part.FileName()
-				if err := validate.Struct(dp.File{Name: fileName, Parent: ns.NullString(dirId)}); err != nil {
+				if err = validate.Struct(dp.File{Name: fileName, Parent: ns.NullString(dirId)}); err != nil {
 					return fiber.NewError(StatusBadRequest, err.Error())
 				}
 

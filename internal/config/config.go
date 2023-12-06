@@ -9,7 +9,7 @@ import (
 type Config struct {
 	FTPAddr      string           `help:"Network address for the FTP server to bind to. It defaults to ':2525' meaning it listens on all interfaces." env:"FTP_ADDR" default:":2525"`
 	FTPPortRange string           `help:"Range of ports to be used for passive FTP connections. The range is provided as a string in the format 'start-end'." env:"FTP_PORT_RANGE"`
-	Username     string           `help:"Username for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"USERNAME"`
+	User         string           `help:"Username for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"USER"`
 	Password     string           `help:"Password for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"PASSWORD"`
 	HTTPAddr     string           `help:"Network address for the HTTP server to bind to" env:"HTTP_ADDR" default:":2526"`
 	HTTPGuest    bool             `help:"If true, enables read-only guest access to the HTTP file manager without login." env:"HTTP_GUEST" default:"false"`
@@ -31,7 +31,7 @@ func New() *Config {
 
 func FTPAddr() string      { return config.FTPAddr }
 func FTPPortRange() string { return config.FTPPortRange }
-func Username() string     { return config.Username }
+func Username() string     { return config.User }
 func Password() string     { return config.Password }
 func HTTPAddr() string     { return config.HTTPAddr }
 func HTTPGuest() bool      { return config.HTTPGuest }

@@ -12,9 +12,9 @@ import (
 // Driver - fot now we only support postgres
 const Driver = "postgres"
 
-// New creates a new database connection using the dbUrl
+// NewDb creates a new database connection using the dbUrl
 // It returns the *sql.DB object representing the connection.
-func New(connStr string, skipMigration bool) *sql.DB {
+func NewDb(connStr string, skipMigration bool) *sql.DB {
 
 	// next a new database connection
 	db, err := sql.Open(Driver, connStr)
