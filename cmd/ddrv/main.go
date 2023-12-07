@@ -52,9 +52,6 @@ func main() {
 		log.Fatal().Err(err).Str("c", "main").Msg("failed to open ddrv driver")
 	}
 
-	// Create FS object
-	fs := filesystem.New(driver)
-
 	// Load data provider
 	dp.Load(postgres.New(config.DbURL(), driver))
 
@@ -63,7 +60,8 @@ func main() {
 	// Create and start ftp server
 	if config.FTPAddr() != "" {
 		go func() {
-			ftpServer := ftp.New(fs)
+			fs := filesystem.New(driver)
+			ftpServer := ftp.New(fs, config.FTPAddr())
 			log.Info().Str("c", "main").Str("addr", config.FTPAddr()).Msg("starting ftp server")
 			errCh <- ftpServer.ListenAndServe()
 		}()
@@ -75,6 +73,14 @@ func main() {
 			errCh <- httpServer.Listen(config.HTTPAddr())
 		}()
 	}
-
+	if config.FTPAddr() == "" && config.HTTPAddr() == "" {
+		go func() {
+			fs := filesystem.New(driver)
+			ftpServer := ftp.New(fs, ":2525")
+			log.Info().Str("c", "main").Msg("--http-addr and --ftp-addr both missing, ftp server will start on default addr")
+			log.Info().Str("c", "main").Str("addr", ":2525").Msg("starting ftp server")
+			errCh <- ftpServer.ListenAndServe()
+		}()
+	}
 	log.Fatal().Msgf("ddrv: error %v", <-errCh)
 }

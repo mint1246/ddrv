@@ -7,11 +7,11 @@ import (
 )
 
 type Config struct {
-	FTPAddr      string           `help:"Network address for the FTP server to bind to. It defaults to ':2525' meaning it listens on all interfaces." env:"FTP_ADDR" default:":2525"`
+	FTPAddr      string           `help:"Network address for the FTP server to bind to. It defaults to ':2525' meaning it listens on all interfaces." env:"FTP_ADDR"`
 	FTPPortRange string           `help:"Range of ports to be used for passive FTP connections. The range is provided as a string in the format 'start-end'." env:"FTP_PORT_RANGE"`
 	User         string           `help:"Username for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"USER"`
 	Password     string           `help:"Password for the ddrv service, used for FTP, HTTP or WEBDAV access authentication." env:"PASSWORD"`
-	HTTPAddr     string           `help:"Network address for the HTTP server to bind to" env:"HTTP_ADDR" default:":2526"`
+	HTTPAddr     string           `help:"Network address for the HTTP server to bind to" env:"HTTP_ADDR"`
 	HTTPGuest    bool             `help:"If true, enables read-only guest access to the HTTP file manager without login." env:"HTTP_GUEST" default:"false"`
 	DbURL        string           `help:"Connection string for the Postgres database. The format should be: postgres://user:password@localhost:port/database?sslmode=disable" env:"DATABASE_URL" required:""`
 	Tokens       string           `help:"Discord bot tokens separated by ','" env:"TOKENS" required:""`

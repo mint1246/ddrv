@@ -23,11 +23,7 @@ var (
 )
 
 // New creates a new FTP server instance with the provided file system and address.
-func New(
-	fs afero.Fs,
-) *ftpserver.FtpServer { // Return a pointer to an FTP server instance
-
-	addr := config.FTPAddr()
+func New(fs afero.Fs, addr string) *ftpserver.FtpServer { // Return a pointer to an FTP server instance
 	ptr := config.FTPPortRange()
 	username := config.Username()
 	password := config.Password()
@@ -90,13 +86,15 @@ type Driver struct {
 
 // ClientConnected is called when a client is connected to the FTP server.
 func (d *Driver) ClientConnected(cc ftpserver.ClientContext) (string, error) {
-	log.Debug().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).Uint32("id", cc.ID()).Msg("new connection")
+	log.Info().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).
+		Str("client", cc.GetClientVersion()).Uint32("id", cc.ID()).Msg("new connection")
 	return "Ditto FTP Server", nil // Return a welcome message
 }
 
 // ClientDisconnected is called when a client is disconnected from the FTP server.
 func (d *Driver) ClientDisconnected(cc ftpserver.ClientContext) {
-	log.Debug().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).Uint32("id", cc.ID()).Msg("connection lost")
+	log.Info().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).
+		Str("client", cc.GetClientVersion()).Uint32("id", cc.ID()).Msg("connection lost")
 }
 
 // AuthUser authenticates a user during the FTP server login process.
