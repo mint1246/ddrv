@@ -10,7 +10,7 @@ import (
 
 	"github.com/forscht/ddrv/internal/config"
 	dp "github.com/forscht/ddrv/internal/dataprovider"
-	"github.com/forscht/ddrv/internal/dataprovider/pgsql"
+	"github.com/forscht/ddrv/internal/dataprovider/postgres"
 	"github.com/forscht/ddrv/internal/filesystem"
 	"github.com/forscht/ddrv/internal/ftp"
 	"github.com/forscht/ddrv/internal/http"
@@ -39,7 +39,7 @@ func main() {
 	fs := filesystem.New(driver)
 
 	// Load data provider
-	dp.Load(pgsql.New(config.DbURL(), driver))
+	dp.Load(postgres.New(config.DbURL(), driver))
 
 	errCh := make(chan error)
 
