@@ -39,7 +39,7 @@ func main() {
 		"version": fmt.Sprintf("ddrv %s", version),
 	})
 
-	// Setup log level
+	// Setup logger
 	log.Logger = zl.New(zl.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
 	zl.SetGlobalLevel(zl.InfoLevel)
 	if config.Debug() {

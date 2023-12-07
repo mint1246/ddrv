@@ -6,9 +6,9 @@ import (
 	"github.com/forscht/ddrv/pkg/ddrv"
 )
 
-var provider Provider
+var provider DataProvider
 
-type Provider interface {
+type DataProvider interface {
 	Get(id, parent string) (*File, error)
 	GetChild(id string) ([]*File, error)
 	Create(name, parent string, isDir bool) (*File, error)
@@ -26,8 +26,8 @@ type Provider interface {
 	CHTime(path string, time time.Time) error
 }
 
-func Load(p Provider) {
-	provider = p
+func Load(dp DataProvider) {
+	provider = dp
 }
 
 func Get(id, parent string) (*File, error) {

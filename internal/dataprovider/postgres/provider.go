@@ -114,7 +114,7 @@ func (pgp *PGProvider) Create(name, parent string, dir bool) (*dataprovider.File
 		return nil, dataprovider.ErrInvalidParent
 	}
 	file := &dataprovider.File{Name: name, Parent: ns.NullString(parent)}
-	if err := pgp.db.QueryRow("INSERT INTO fs (name,dir,parent) VALUES($1,$2,$3) RETURNING id, dir, mtime", name, dir, parent).
+	if err = pgp.db.QueryRow("INSERT INTO fs (name,dir,parent) VALUES($1,$2,$3) RETURNING id, dir, mtime", name, dir, parent).
 		Scan(&file.ID, &file.Dir, &file.MTime); err != nil {
 		return nil, pqErrToOs(err) // Handle already exists
 	}
@@ -207,7 +207,10 @@ func (pgp *PGProvider) GetNodes(id string) ([]ddrv.Node, error) {
 }
 
 func (pgp *PGProvider) CreateNodes(fid string, nodes []ddrv.Node) error {
-
+	// Nothing to do if there are no nodes provided
+	if len(nodes) == 0 {
+		return nil
+	}
 	tx, err := pgp.db.Begin()
 	if err != nil {
 		return err
