@@ -18,6 +18,7 @@ type Config struct {
 	Channels     string           `help:"Discord server channels separated by ','" env:"CHANNELS" required:""`
 	ChunkSize    int              `help:"The maximum size in bytes of chunks to be sent via Manager webhook. By default, it's set to 24MB (25165824 bytes)." env:"CHUNK_SIZE" default:"25165824"`
 	AsyncWrite   bool             `help:"Enables concurrent file uploads to Discord, resulting in faster file transfers. Note that this will use significantly more RAM, approximately (chunkSize * number of webhooks) + 20% extra bytes. Use with caution based on your system's memory capacity." env:"ASYNC_WRITE" default:"false"`
+	Debug        bool             `help:"Sets log level to debug" env:"DEBUG" default:"false"`
 	Version      kong.VersionFlag `kong:"name='version', help='Display version.'"`
 }
 
@@ -40,3 +41,4 @@ func ChunkSize() int       { return config.ChunkSize }
 func AsyncWrite() bool     { return config.AsyncWrite }
 func Tokens() []string     { return strings.Split(config.Tokens, ",") }
 func Channels() []string   { return strings.Split(config.Channels, ",") }
+func Debug() bool          { return config.Debug }

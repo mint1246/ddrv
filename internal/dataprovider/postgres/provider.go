@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 
 	"github.com/forscht/ddrv/internal/dataprovider"
 	"github.com/forscht/ddrv/pkg/ddrv"
@@ -31,7 +31,7 @@ func New(dbURL string, driver *ddrv.Driver) *PGProvider {
 	dbConn := NewDb(dbURL, false)
 	sg, err := snowflake.NewNode(int64(rand.Intn(1023)))
 	if err != nil {
-		log.Fatalf("failed to create snowflake node %v", err)
+		log.Fatal().Err(err).Str("c", "postgres provider").Msg("failed to create snowflake node")
 	}
 
 	return &PGProvider{dbConn, sg, driver, locker.New()}

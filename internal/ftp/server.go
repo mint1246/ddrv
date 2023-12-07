@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/fclairamb/ftpserverlib"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/afero"
 
 	"github.com/forscht/ddrv/internal/config"
@@ -36,7 +36,8 @@ func New(
 	if ptr != "" {
 		portRange = &ftpserver.PortRange{}
 		if _, err := fmt.Sscanf(ptr, "%d-%d", &portRange.Start, &portRange.End); err != nil {
-			log.Fatalf("bad ftp port range %v", err)
+			log.Fatal().Str("c", "ftpserver").Int("portstart", portRange.Start).
+				Int("portend", portRange.End).Err(err).Msg("bad port range")
 		}
 	}
 
@@ -89,19 +90,21 @@ type Driver struct {
 
 // ClientConnected is called when a client is connected to the FTP server.
 func (d *Driver) ClientConnected(cc ftpserver.ClientContext) (string, error) {
-	log.Printf("new conn - addr:%s id: %d", cc.RemoteAddr(), cc.ID()) // Log the new connection details
-	return "Ditto FTP Server", nil                                    // Return a welcome message
+	log.Debug().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).Uint32("id", cc.ID()).Msg("new connection")
+	return "Ditto FTP Server", nil // Return a welcome message
 }
 
 // ClientDisconnected is called when a client is disconnected from the FTP server.
 func (d *Driver) ClientDisconnected(cc ftpserver.ClientContext) {
-	log.Printf("lost conn - addr:%s id: %d", cc.RemoteAddr(), cc.ID()) // Log the lost connection details
+	log.Debug().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).Uint32("id", cc.ID()).Msg("connection lost")
 }
 
 // AuthUser authenticates a user during the FTP server login process.
-func (d *Driver) AuthUser(_ ftpserver.ClientContext, user, pass string) (ftpserver.ClientDriver, error) {
+func (d *Driver) AuthUser(cc ftpserver.ClientContext, user, pass string) (ftpserver.ClientDriver, error) {
 	// If authentication is required, check the provided username and password against the expected values
 	if d.username != "" && d.username != user || d.password != "" && d.password != pass {
+		log.Debug().Str("c", "ftpserver").Any("addr", cc.RemoteAddr()).Uint32("id", cc.ID()).
+			Str("user", user).Str("pass", pass).Err(ErrBadUserNameOrPassword).Msg("authentication failed")
 		return nil, ErrBadUserNameOrPassword // If either check fails, return an authentication error
 	}
 	return d.Fs, nil // If the checks pass or authentication is not required, proceed with the provided file system

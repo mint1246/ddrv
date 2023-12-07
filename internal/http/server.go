@@ -2,10 +2,11 @@ package http
 
 import (
 	"errors"
-	"log"
 
+	fzl "github.com/gofiber/contrib/fiberzerolog"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/rs/zerolog/log"
 
 	"github.com/forscht/ddrv/internal/http/api"
 	"github.com/forscht/ddrv/internal/http/web"
@@ -18,13 +19,15 @@ func New(driver *ddrv.Driver) *fiber.App {
 	app := fiber.New(config())
 
 	// Enable logger
-	app.Use(logger)
+	logger := log.With().Str("c", "httpserver").Logger()
+	app.Use(fzl.New(fzl.Config{Logger: &logger}))
 
 	// Enable cors
 	app.Use(cors.New())
 
 	// Load Web routes
 	web.Load(app)
+
 	// Register API routes
 	api.Load(app, driver)
 
@@ -47,16 +50,10 @@ func config() fiber.Config {
 			if errors.As(err, &e) {
 				code = e.Code
 			}
-			log.Printf("http: error=%q code=%d method=%s url=%s ip=%s", err, code, ctx.Method(), ctx.OriginalURL(), ctx.IP())
 			if code != fiber.StatusInternalServerError {
 				return ctx.Status(code).JSON(api.Response{Message: err.Error()})
 			}
 			return ctx.Status(code).JSON(api.Response{Message: "internal server error"})
 		},
 	}
-}
-
-func logger(c *fiber.Ctx) error {
-	log.Printf("http: method=%s url=%s ip=%s", c.Method(), c.OriginalURL(), c.IP())
-	return c.Next()
 }
