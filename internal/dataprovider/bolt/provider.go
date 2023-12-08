@@ -51,7 +51,7 @@ func New(path string, driver *ddrv.Driver) dp.DataProvider {
 func (bfp *Provider) Get(id, parent string) (*dp.File, error) {
 	path := decodeBase64(id)
 	if path == "" {
-		path = "/"
+		path = RootDirPath
 	}
 	file, err := bfp.Stat(path)
 	if err != nil {
@@ -66,7 +66,7 @@ func (bfp *Provider) Get(id, parent string) (*dp.File, error) {
 
 func (bfp *Provider) Update(id, parent string, file *dp.File) (*dp.File, error) {
 	path := decodeBase64(id)
-	if path == "/" {
+	if path == RootDirPath {
 		return nil, dp.ErrPermission
 	}
 	exciting, err := bfp.Stat(path)
@@ -87,7 +87,7 @@ func (bfp *Provider) Update(id, parent string, file *dp.File) (*dp.File, error) 
 func (bfp *Provider) GetChild(id string) ([]*dp.File, error) {
 	path := decodeBase64(id)
 	if path == "" {
-		path = "/"
+		path = RootDirPath
 	}
 	file, err := bfp.Stat(path)
 	if err != nil {
@@ -123,7 +123,7 @@ func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
 
 func (bfp *Provider) Delete(id, parent string) error {
 	path := decodeBase64(id)
-	if path == "/" {
+	if path == RootDirPath {
 		return dp.ErrPermission
 	}
 	file, err := bfp.Stat(path)
