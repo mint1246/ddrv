@@ -144,5 +144,5 @@ func CheckFlag(flag int, allowedFlags int) bool {
 }
 
 func convertToAferoFile(df *dp.File) *File {
-	return &File{id: df.ID, name: df.Name, dir: df.Dir, size: df.Size, mtime: df.MTime}
+	return &File{id: df.Id, name: df.Name, dir: df.Dir, size: df.Size, mtime: df.MTime}
 }

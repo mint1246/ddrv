@@ -14,7 +14,7 @@ import (
 
 	"github.com/forscht/ddrv/internal/config"
 	dp "github.com/forscht/ddrv/internal/dataprovider"
-	"github.com/forscht/ddrv/internal/dataprovider/postgres"
+	"github.com/forscht/ddrv/internal/dataprovider/bolt"
 	"github.com/forscht/ddrv/internal/filesystem"
 	"github.com/forscht/ddrv/internal/ftp"
 	"github.com/forscht/ddrv/internal/http"
@@ -45,15 +45,16 @@ func main() {
 	if config.Debug() {
 		zl.SetGlobalLevel(zl.DebugLevel)
 	}
-
 	// Create a ddrv manager
 	driver, err := ddrv.New(config.Tokens(), config.Channels(), config.ChunkSize())
 	if err != nil {
 		log.Fatal().Err(err).Str("c", "main").Msg("failed to open ddrv driver")
 	}
 
+	// Init dataprovider
+	bprovider := bolt.New("./ddrv.db", driver)
 	// Load data provider
-	dp.Load(postgres.New(config.DbURL(), driver))
+	dp.Load(bprovider)
 
 	errCh := make(chan error)
 

@@ -11,6 +11,7 @@ var ErrAlreadyClosed = errors.New("already closed")
 
 // Node represents a Discord attachment URL and Size
 type Node struct {
+	NId   int64  // not used in ddrv package itself but for data providers
 	URL   string `json:"url"`  // URL where the data is stored
 	Size  int    `json:"size"` // Size of the data
 	Start int64  // Start position of the data in the overall data sequence

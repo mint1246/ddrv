@@ -94,7 +94,7 @@ func CreateFileHandler(driver *ddrv.Driver) fiber.Handler {
 					return err
 				}
 
-				if err = dp.CreateNodes(file.ID, nodes); err != nil {
+				if err = dp.CreateNodes(file.Id, nodes); err != nil {
 					return err
 				}
 

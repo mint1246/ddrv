@@ -15,6 +15,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/afero v1.11.0
+	go.etcd.io/bbolt v1.3.8
 )
 
 require (

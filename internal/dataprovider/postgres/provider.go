@@ -51,7 +51,7 @@ func (pgp *PGProvider) Get(id, parent string) (*dataprovider.File, error) {
 			WHERE fs.id=$1 AND parent=$2
 			GROUP BY 1, 2, 3, 5, 6
 			ORDER BY fs.dir DESC, fs.name;
-		`, id, parent).Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.Parent, &file.MTime)
+		`, id, parent).Scan(&file.Id, &file.Name, &file.Dir, &file.Size, &file.Parent, &file.MTime)
 	} else {
 		err = pgp.db.QueryRow(`
 			SELECT fs.id, fs.name, dir, parsesize(SUM(node.size)) AS size, fs.parent, fs.mtime
@@ -60,7 +60,7 @@ func (pgp *PGProvider) Get(id, parent string) (*dataprovider.File, error) {
 			WHERE fs.id=$1
 			GROUP BY 1, 2, 3, 5, 6
 			ORDER BY fs.dir DESC, fs.name;
-		`, id).Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.Parent, &file.MTime)
+		`, id).Scan(&file.Id, &file.Name, &file.Dir, &file.Size, &file.Parent, &file.MTime)
 	}
 
 	if err != nil {
@@ -97,7 +97,7 @@ func (pgp *PGProvider) GetChild(id string) ([]*dataprovider.File, error) {
 
 	for rows.Next() {
 		child := new(dataprovider.File)
-		if err := rows.Scan(&child.ID, &child.Name, &child.Dir, &child.Size, &child.Parent, &child.MTime); err != nil {
+		if err := rows.Scan(&child.Id, &child.Name, &child.Dir, &child.Size, &child.Parent, &child.MTime); err != nil {
 			return nil, err
 		}
 		files = append(files, child)
@@ -115,7 +115,7 @@ func (pgp *PGProvider) Create(name, parent string, dir bool) (*dataprovider.File
 	}
 	file := &dataprovider.File{Name: name, Parent: ns.NullString(parent)}
 	if err = pgp.db.QueryRow("INSERT INTO fs (name,dir,parent) VALUES($1,$2,$3) RETURNING id, dir, mtime", name, dir, parent).
-		Scan(&file.ID, &file.Dir, &file.MTime); err != nil {
+		Scan(&file.Id, &file.Dir, &file.MTime); err != nil {
 		return nil, pqErrToOs(err) // Handle already exists
 	}
 	return file, nil
@@ -125,18 +125,17 @@ func (pgp *PGProvider) Update(id, parent string, file *dataprovider.File) (*data
 	if id == RootDirId {
 		return nil, dataprovider.ErrPermission
 	}
-
 	var err error
 	if parent == "" {
 		err = pgp.db.QueryRow(
 			"UPDATE fs SET name=$1, parent=$2, mtime = NOW() WHERE id=$3 RETURNING id,dir,mtime",
 			file.Name, file.Parent, id,
-		).Scan(&file.ID, &file.Dir, &file.MTime)
+		).Scan(&file.Id, &file.Dir, &file.MTime)
 	} else {
 		err = pgp.db.QueryRow(
 			"UPDATE fs SET name=$1, parent=$2, mtime = NOW() WHERE id=$3 AND parent=$4 RETURNING id,dir,mtime",
 			file.Name, file.Parent, id, parent,
-		).Scan(&file.ID, &file.Dir, &file.MTime)
+		).Scan(&file.Id, &file.Dir, &file.MTime)
 	}
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -255,7 +254,7 @@ func (pgp *PGProvider) DeleteNodes(fid string) error {
 func (pgp *PGProvider) Stat(name string) (*dataprovider.File, error) {
 	file := new(dataprovider.File)
 	err := pgp.db.QueryRow("SELECT id, name, dir, size, mtime FROM stat($1)", name).
-		Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime)
+		Scan(&file.Id, &file.Name, &file.Dir, &file.Size, &file.MTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, dataprovider.ErrNotExist
@@ -281,7 +280,7 @@ func (pgp *PGProvider) Ls(name string, limit int, offset int) ([]*dataprovider.F
 	entries := make([]*dataprovider.File, 0)
 	for rows.Next() {
 		file := new(dataprovider.File)
-		if err = rows.Scan(&file.ID, &file.Name, &file.Dir, &file.Size, &file.MTime); err != nil {
+		if err = rows.Scan(&file.Id, &file.Name, &file.Dir, &file.Size, &file.MTime); err != nil {
 			return nil, err
 		}
 		entries = append(entries, file)

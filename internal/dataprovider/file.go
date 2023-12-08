@@ -7,7 +7,7 @@ import (
 )
 
 type File struct {
-	ID     string        `json:"id"`
+	Id     string        `json:"id"`
 	Name   string        `json:"name" validate:"required,regex=^[\p{L}]+$"`
 	Dir    bool          `json:"dir"`
 	Size   int64         `json:"size,omitempty"`
