@@ -143,7 +143,7 @@ func (bfp *Provider) GetNodes(id string) ([]ddrv.Node, error) {
 		if root == nil {
 			return nil
 		}
-		bucket := root.Bucket([]byte(id))
+		bucket := root.Bucket([]byte(decodep(id)))
 		if bucket == nil {
 			return nil
 		}
@@ -184,7 +184,7 @@ func (bfp *Provider) CreateNodes(id string, nodes []ddrv.Node) error {
 		if err != nil {
 			return err
 		}
-		bucket, err := root.CreateBucketIfNotExists([]byte(id))
+		bucket, err := root.CreateBucketIfNotExists([]byte(decodep(id)))
 		if err != nil {
 			return err
 		}
@@ -294,7 +294,6 @@ func (bfp *Provider) Rm(path string) error {
 	log.Info().Str("cmd", "rm").Str("path", path).Msg("")
 	return bfp.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
-
 		// Check if the directory exists
 		if data := b.Get([]byte(path)); data == nil {
 			return dp.ErrNotExist
@@ -326,7 +325,6 @@ func (bfp *Provider) Rm(path string) error {
 func (bfp *Provider) Mv(oldPath, newPath string) error {
 	oldPath = filepath.Clean(oldPath)
 	newPath = filepath.Clean(newPath)
-	file := new(dp.File)
 	log.Info().Str("cmd", "mv").Str("new", newPath).Str("old", oldPath).Msg("")
 	return bfp.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
@@ -338,12 +336,7 @@ func (bfp *Provider) Mv(oldPath, newPath string) error {
 		if data == nil {
 			return dp.ErrNotExist
 		}
-		deserializeFile(file, data)
-		file.Name = newPath
-		if err := b.Delete([]byte(oldPath)); err != nil {
-			return err
-		}
-		if err := b.Put([]byte(newPath), serializeFile(*file)); err != nil {
+		if err := bfp.RenameFile(tx, b, data, oldPath, newPath); err != nil {
 			return err
 		}
 		// Move all children in the directory
@@ -352,17 +345,52 @@ func (bfp *Provider) Mv(oldPath, newPath string) error {
 		c := b.Cursor()
 		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 			newKey := append(newPrefix, k[len(prefix):]...)
-			if err := b.Delete(k); err != nil {
-				return err
-			}
-			deserializeFile(file, v)
-			file.Name = string(newKey)
-			if err := b.Put(newKey, serializeFile(*file)); err != nil {
+			if err := bfp.RenameFile(tx, b, v, string(k), string(newKey)); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+}
+
+func (bfp *Provider) RenameFile(tx *bbolt.Tx, b *bbolt.Bucket, data []byte, oldp, newp string) error {
+	file := new(dp.File)
+	deserializeFile(file, data)
+	file.Name = newp
+	if err := b.Delete([]byte(oldp)); err != nil {
+		return err
+	}
+	if err := b.Put([]byte(newp), serializeFile(*file)); err != nil {
+		return err
+	}
+	if !file.Dir {
+		return bfp.RenameBucket(tx, oldp, newp)
+	}
+	return nil
+}
+
+func (bfp *Provider) RenameBucket(tx *bbolt.Tx, oldp, newp string) error {
+	root := tx.Bucket([]byte("nodes"))
+	if root == nil {
+		return nil // No nodes bucket exists, nothing to do
+	}
+	oldBucket := root.Bucket([]byte(oldp))
+	if oldBucket != nil {
+		newBucket, err := root.CreateBucketIfNotExists([]byte(newp))
+		if err != nil {
+			return err
+		}
+		err = oldBucket.ForEach(func(k, v []byte) error {
+			return newBucket.Put(k, v)
+		})
+		if err != nil {
+			return err
+		}
+		if err := root.DeleteBucket([]byte(oldp)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (bfp *Provider) CHTime(path string, newMTime time.Time) error {
