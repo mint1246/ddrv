@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/forscht/ddrv/internal/config"
 	"github.com/forscht/ddrv/pkg/ddrv"
 	"github.com/forscht/ddrv/pkg/validator"
 )
@@ -17,13 +16,12 @@ func Load(app *fiber.App, driver *ddrv.Driver) {
 
 	// public route for public login
 	api.Post("/user/login", LoginHandler())
+
 	// returns necessary ddrv auth config
 	api.Get("/config", AuthConfigHandler())
 
-	// setup auth middleware if username and password are not blank
-	if config.Username() != "" || config.Password() != "" {
-		api.Use(AuthHandler())
-	}
+	// setup auth middleware
+	api.Use(AuthHandler())
 
 	// verify JWT token (required on a page load)
 	api.Get("/check_token", CheckTokenHandler())

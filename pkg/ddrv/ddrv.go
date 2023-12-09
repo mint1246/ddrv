@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -12,15 +13,24 @@ type Driver struct {
 	chunkSize int
 }
 
-func New(tokens []string, channels []string, chunkSize int) (*Driver, error) {
+type Config struct {
+	Token      string
+	Channels   string
+	AsyncWrite bool
+	ChunkSize  int
+}
+
+func New(cfg *Config) (*Driver, error) {
+	tokens := strings.Split(cfg.Token, ",")
+	channels := strings.Split(cfg.Channels, ",")
 	if len(tokens) == 0 || len(channels) == 0 {
 		return nil,
 			fmt.Errorf("not enough tokens or channels : tokens %d channels %d", len(tokens), len(channels))
 	}
-	if chunkSize > 25*1024*1024 || chunkSize < 0 {
-		return nil, fmt.Errorf("invalid chunk size %d", chunkSize)
+	if cfg.ChunkSize > 25*1024*1024 || cfg.ChunkSize < 0 {
+		return nil, fmt.Errorf("invalid chunk size %d", cfg.ChunkSize)
 	}
-	return &Driver{rest: NewRest(tokens, channels), chunkSize: chunkSize}, nil
+	return &Driver{rest: NewRest(tokens, channels), chunkSize: cfg.ChunkSize}, nil
 }
 
 // NewWriter creates a new ddrv.Writer instance that implements an io.WriterCloser.

@@ -9,7 +9,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/forscht/ddrv/internal/config"
 	dp "github.com/forscht/ddrv/internal/dataprovider"
 	"github.com/forscht/ddrv/pkg/ddrv"
 	"github.com/forscht/ddrv/pkg/httprange"
@@ -80,7 +79,7 @@ func CreateFileHandler(driver *ddrv.Driver) fiber.Handler {
 					nodes = append(nodes, a)
 				}
 
-				if config.AsyncWrite() {
+				if c.Locals("asyncwrite").(bool) {
 					dwriter = driver.NewNWriter(onChunk)
 				} else {
 					dwriter = driver.NewWriter(onChunk)

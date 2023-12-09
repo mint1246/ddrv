@@ -21,11 +21,12 @@ var (
 )
 
 type Fs struct {
-	driver *ddrv.Driver
+	driver     *ddrv.Driver
+	asyncWrite bool
 }
 
-func New(driver *ddrv.Driver) afero.Fs {
-	return NewLogFs(&Fs{driver})
+func New(driver *ddrv.Driver, asyncWrite bool) afero.Fs {
+	return NewLogFs(&Fs{driver, asyncWrite})
 }
 
 func (fs *Fs) Name() string                        { return "LogFs" }
@@ -65,7 +66,7 @@ func (fs *Fs) Open(name string) (afero.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	file := convertToAferoFile(f)
+	file := fs.convertToAferoFile(f)
 	file.flag = os.O_RDONLY
 	file.driver = fs.driver
 	if !file.dir {
@@ -94,7 +95,7 @@ func (fs *Fs) OpenFile(name string, flag int, _ os.FileMode) (afero.File, error)
 		return nil, err
 	}
 
-	file := convertToAferoFile(f)
+	file := fs.convertToAferoFile(f)
 	file.flag = flag
 	file.driver = fs.driver
 
@@ -136,13 +137,13 @@ func (fs *Fs) Stat(name string) (os.FileInfo, error) {
 	if err != nil {
 		return nil, os.ErrNotExist
 	}
-	return convertToAferoFile(f).Stat()
+	return fs.convertToAferoFile(f).Stat()
 }
 
 func CheckFlag(flag int, allowedFlags int) bool {
 	return flag == (flag & allowedFlags)
 }
 
-func convertToAferoFile(df *dp.File) *File {
-	return &File{id: df.Id, name: df.Name, dir: df.Dir, size: df.Size, mtime: df.MTime}
+func (fs *Fs) convertToAferoFile(df *dp.File) *File {
+	return &File{id: df.Id, name: df.Name, dir: df.Dir, size: df.Size, mtime: df.MTime, fs: fs}
 }

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/forscht/ddrv/internal/config"
 	"github.com/forscht/ddrv/internal/dataprovider"
 	"github.com/forscht/ddrv/pkg/ddrv"
 )
@@ -23,6 +22,7 @@ type File struct {
 	data         []ddrv.Node
 	readDirCount int
 
+	fs          *Fs
 	driver      *ddrv.Driver
 	chunks      []ddrv.Node
 	streamWrite io.WriteCloser
@@ -78,7 +78,7 @@ func (f *File) Readdir(count int) ([]os.FileInfo, error) {
 	}
 	entries := make([]os.FileInfo, len(files))
 	for i, file := range files {
-		entries[i] = convertToAferoFile(file)
+		entries[i] = f.fs.convertToAferoFile(file)
 	}
 	if count > 0 && len(entries) == 0 {
 		err = io.EOF
@@ -138,7 +138,7 @@ func (f *File) Write(p []byte) (int, error) {
 				return 0, err
 			}
 		}
-		if config.AsyncWrite() {
+		if f.fs.asyncWrite {
 			f.streamWrite = f.driver.NewNWriter(func(chunk ddrv.Node) {
 				f.chunks = append(f.chunks, chunk)
 			})
