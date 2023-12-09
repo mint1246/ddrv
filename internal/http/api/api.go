@@ -30,15 +30,15 @@ func Load(app *fiber.App, driver *ddrv.Driver) {
 
 	// Load directory middlewares
 	api.Post("/directories/", CreateDirHandler())
-	api.Get("/directories/:id<guid>?", GetDirHandler())
-	api.Put("/directories/:id<guid>", UpdateDirHandler())
-	api.Delete("/directories/:id<guid>", DelDirHandler())
+	api.Get("/directories/:id?", GetDirHandler())
+	api.Put("/directories/:id", UpdateDirHandler())
+	api.Delete("/directories/:id", DelDirHandler())
 
 	// Load file middlewares
-	api.Post("/directories/:dirId<guid>/files", CreateFileHandler(driver))
-	api.Get("/directories/:dirId<guid>/files/:id<guid>", GetFileHandler())
-	api.Put("/directories/:dirId<guid>/files/:id<guid>", UpdateFileHandler())
-	api.Delete("/directories/:dirId<guid>/files/:id<guid>", DelFileHandler())
+	api.Post("/directories/:dirId/files", CreateFileHandler(driver))
+	api.Get("/directories/:dirId/files/:id", GetFileHandler())
+	api.Put("/directories/:dirId/files/:id", UpdateFileHandler())
+	api.Delete("/directories/:dirId<guid>/files/:id", DelFileHandler())
 
 	// Just like discord, we will not authorize file endpoints
 	// so that it can work with download managers or media players

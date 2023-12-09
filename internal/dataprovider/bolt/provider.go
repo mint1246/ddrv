@@ -53,6 +53,7 @@ func (bfp *Provider) Get(id, parent string) (*dp.File, error) {
 	if path == "" {
 		path = RootDirPath
 	}
+	path = filepath.Clean(path)
 	file, err := bfp.Stat(path)
 	if err != nil {
 		return nil, err
@@ -107,7 +108,7 @@ func (bfp *Provider) GetChild(id string) ([]*dp.File, error) {
 }
 
 func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
-	path := decodeBase64(parent) + "/" + name
+	path := filepath.Clean(decodeBase64(parent) + "/" + name)
 	file := dp.File{Name: path, Dir: dir, MTime: time.Now()}
 	err := bfp.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
@@ -117,6 +118,7 @@ func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
 		}
 		return b.Put([]byte(path), serializeFile(file))
 	})
+	file.Id = encodeBase64(path)
 	file.Name = name
 	return &file, err
 }
