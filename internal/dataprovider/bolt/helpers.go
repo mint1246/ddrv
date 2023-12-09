@@ -54,29 +54,35 @@ func deserializeFile(file *dataprovider.File, data []byte) {
 	file.Parent = ns.NullString(encodeBase64(parent))
 }
 
-func encodeBase64(str string) string {
-	return base64.StdEncoding.EncodeToString([]byte(str))
+func encodePath(path string) string {
+	path = filepath.Clean(path)
+	return base64.StdEncoding.EncodeToString([]byte(path))
 }
 
-func decodeBase64(str string) string {
-	// Decode the string
-	decodedBytes, err := base64.StdEncoding.DecodeString(str)
+func decodep(id string) string {
+	decoded, err := base64.StdEncoding.DecodeString(id)
 	if err != nil {
 		log.Fatal().Str("c", "bolt provider").Err(err).Msg("failed to decode base64")
 	}
 	// Convert the bytes to a string and print it
-	return string(decodedBytes)
+	path := string(decoded)
+	if path == "" {
+		path = "/"
+	}
+	return filepath.Clean(path)
+}
+
+func encodeBase64(str string) string {
+	return base64.StdEncoding.EncodeToString([]byte(str))
 }
 
 // findDirectChild checks if arg2 is a direct child of arg1.
 func findDirectChild(arg1, arg2 string) bool {
 	// Split the child path into directory and file name components.
 	dir, _ := filepath.Split(arg2)
-
 	// The Split function leaves a trailing slash on the directory component,
 	// so we need to clean it again to make it comparable with arg1.
 	dir = filepath.Clean(dir)
-
 	// Check if the directory part of arg2 matches arg1.
 	return dir == arg1
 }

@@ -49,11 +49,7 @@ func New(path string, driver *ddrv.Driver) dp.DataProvider {
 }
 
 func (bfp *Provider) Get(id, parent string) (*dp.File, error) {
-	path := decodeBase64(id)
-	if path == "" {
-		path = RootDirPath
-	}
-	path = filepath.Clean(path)
+	path := decodep(id)
 	file, err := bfp.Stat(path)
 	if err != nil {
 		return nil, err
@@ -66,7 +62,7 @@ func (bfp *Provider) Get(id, parent string) (*dp.File, error) {
 }
 
 func (bfp *Provider) Update(id, parent string, file *dp.File) (*dp.File, error) {
-	path := decodeBase64(id)
+	path := decodep(id)
 	if path == RootDirPath {
 		return nil, dp.ErrPermission
 	}
@@ -77,19 +73,16 @@ func (bfp *Provider) Update(id, parent string, file *dp.File) (*dp.File, error) 
 	if string(exciting.Parent) != parent {
 		return nil, dp.ErrInvalidParent
 	}
-	newPath := decodeBase64(string(file.Parent)) + "/" + file.Name
-	if err = bfp.Mv(exciting.Name, newPath); err != nil {
+	newp := filepath.Clean(decodep(string(file.Parent)) + "/" + file.Name)
+	if err = bfp.Mv(exciting.Name, newp); err != nil {
 		return nil, err
 	}
-	file.Name = newPath
+	file.Name = newp
 	return file, nil
 }
 
 func (bfp *Provider) GetChild(id string) ([]*dp.File, error) {
-	path := decodeBase64(id)
-	if path == "" {
-		path = RootDirPath
-	}
+	path := decodep(id)
 	file, err := bfp.Stat(path)
 	if err != nil {
 		return nil, err
@@ -108,7 +101,7 @@ func (bfp *Provider) GetChild(id string) ([]*dp.File, error) {
 }
 
 func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
-	path := filepath.Clean(decodeBase64(parent) + "/" + name)
+	path := filepath.Clean(decodep(parent) + "/" + name)
 	file := dp.File{Name: path, Dir: dir, MTime: time.Now()}
 	err := bfp.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
@@ -118,13 +111,13 @@ func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
 		}
 		return b.Put([]byte(path), serializeFile(file))
 	})
-	file.Id = encodeBase64(path)
+	file.Id = encodePath(path)
 	file.Name = name
 	return &file, err
 }
 
 func (bfp *Provider) Delete(id, parent string) error {
-	path := decodeBase64(id)
+	path := decodep(id)
 	if path == RootDirPath {
 		return dp.ErrPermission
 	}
@@ -183,7 +176,7 @@ func (bfp *Provider) GetNodes(id string) ([]ddrv.Node, error) {
 
 func (bfp *Provider) CreateNodes(id string, nodes []ddrv.Node) error {
 	return bfp.db.Update(func(tx *bbolt.Tx) error {
-		file, err := bfp.Stat(decodeBase64(id))
+		file, err := bfp.Stat(decodep(id))
 		if err != nil {
 			return dp.ErrNotExist
 		}
