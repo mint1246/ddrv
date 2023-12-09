@@ -49,14 +49,9 @@ func deserializeFile(file *dataprovider.File, data []byte) {
 	if err != nil {
 		log.Fatal().Str("c", "bolt provider").Err(err).Msg("failed to deserialize file")
 	}
-	file.Id = encodeBase64(file.Name)
+	file.Id = encodep(file.Name)
 	parent, _ := filepath.Split(file.Name)
-	file.Parent = ns.NullString(encodeBase64(parent))
-}
-
-func encodePath(path string) string {
-	path = filepath.Clean(path)
-	return base64.StdEncoding.EncodeToString([]byte(path))
+	file.Parent = ns.NullString(encodep(parent))
 }
 
 func decodep(id string) string {
@@ -72,8 +67,9 @@ func decodep(id string) string {
 	return filepath.Clean(path)
 }
 
-func encodeBase64(str string) string {
-	return base64.StdEncoding.EncodeToString([]byte(str))
+func encodep(path string) string {
+	path = filepath.Clean(path)
+	return base64.StdEncoding.EncodeToString([]byte(path))
 }
 
 // findDirectChild checks if arg2 is a direct child of arg1.

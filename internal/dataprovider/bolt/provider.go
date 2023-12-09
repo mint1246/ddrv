@@ -70,7 +70,7 @@ func (bfp *Provider) Update(id, parent string, file *dp.File) (*dp.File, error) 
 	if err != nil {
 		return nil, err
 	}
-	if string(exciting.Parent) != parent {
+	if parent != "" && string(exciting.Parent) != parent {
 		return nil, dp.ErrInvalidParent
 	}
 	newp := filepath.Clean(decodep(string(file.Parent)) + "/" + file.Name)
@@ -111,7 +111,7 @@ func (bfp *Provider) Create(name, parent string, dir bool) (*dp.File, error) {
 		}
 		return b.Put([]byte(path), serializeFile(file))
 	})
-	file.Id = encodePath(path)
+	file.Id = encodep(path)
 	file.Name = name
 	return &file, err
 }
@@ -215,7 +215,6 @@ func (bfp *Provider) DeleteNodes(id string) error {
 
 func (bfp *Provider) Stat(path string) (*dp.File, error) {
 	path = filepath.Clean(path)
-	//log.Info().Str("cmd", "stat").Str("path", path).Msg("")
 	file := new(dp.File)
 	err := bfp.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
@@ -331,7 +330,6 @@ func (bfp *Provider) Mv(oldPath, newPath string) error {
 	log.Info().Str("cmd", "mv").Str("new", newPath).Str("old", oldPath).Msg("")
 	return bfp.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("fs"))
-
 		if exist := b.Get([]byte(newPath)); exist != nil {
 			return dp.ErrExist
 		}
