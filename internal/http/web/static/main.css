@@ -4,6 +4,21 @@
     --headings-color: #084ccf;
     --headings-font: 'Noto Sans Symbols 2';
 }
+.dark-mode {
+  color: white;
+}
+
+#theme-switcher {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #333;
+  color: white;
+  cursor: pointer;
+}
 
 body {
     max-width: 50rem;
@@ -30,6 +45,7 @@ table thead tr {
 table td, th {
     cursor: default;
     text-align: justify;
+    color: #FFFFFF;
 }
 
 
@@ -77,7 +93,7 @@ h1, h2, h3 {
 
 button {
     border: 1px solid #1d67f6;
-    background-color: #ddeeff;
+    background-color: #93aaff;
     color: #084ccf;
     font-size: inherit;
     padding: 2px 8px;
@@ -175,17 +191,6 @@ dialog::backdrop {
     font-size: 12px;
     white-space: nowrap;
     position: absolute;
-    border: 6px solid transparent;
-    top: -38px;
+    top: -24px;
     right: 0;
-    -ms-transform: translateX(50%);
-    transform: translateX(50%);
-}
-
-.progress-bar-no-arrow > .progress-bar-filled::before,
-.progress-bar-no-arrow > .progress-bar-filled::after {
-    content: "";
-    display: none;
-    visibility: hidden;
-    opacity: 0;
 }
