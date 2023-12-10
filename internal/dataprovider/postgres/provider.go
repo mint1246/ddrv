@@ -26,13 +26,9 @@ type PGProvider struct {
 	locker *locker.Locker
 }
 
-type Config struct {
-	DbURL string `mapstructure:"db_url"`
-}
-
-func New(cfg *Config, driver *ddrv.Driver) *PGProvider {
+func New(dbURL string, driver *ddrv.Driver) *PGProvider {
 	// Create database connection
-	dbConn := NewDb(cfg.DbURL, false)
+	dbConn := NewDb(dbURL, false)
 	sg, err := snowflake.NewNode(int64(rand.Intn(1023)))
 	if err != nil {
 		log.Fatal().Err(err).Str("c", "postgres provider").Msg("failed to create snowflake node")

@@ -13,17 +13,30 @@ import (
 	"github.com/forscht/ddrv/pkg/ddrv"
 )
 
-type Config struct {
-	Addr       string `mapstructure:"addr"`
-	Username   string `mapstructure:"username"`
-	Password   string `mapstructure:"password"`
-	GuestMode  bool   `mapstructure:"guest_mode"`
-	AsyncWrite bool   `mapstructure:"async_write"`
+func New(driver *ddrv.Driver) *fiber.App {
+
+	// Initialize fiber app
+	app := fiber.New(config())
+
+	// Enable logger
+	logger := log.With().Str("c", "httpserver").Logger()
+	app.Use(fzl.New(fzl.Config{Logger: &logger}))
+
+	// Enable cors
+	app.Use(cors.New())
+
+	// Load Web routes
+	web.Load(app)
+
+	// Register API routes
+	api.Load(app, driver)
+
+	return app
 }
 
-func Serv(driver *ddrv.Driver, cfg *Config) error {
-
-	fconfig := fiber.Config{
+func config() fiber.Config {
+	//engine := html.New("./http/web/views", ".html")
+	return fiber.Config{
 		DisablePreParseMultipartForm: true, // https://github.com/gofiber/fiber/issues/1838
 		StreamRequestBody:            true,
 		DisableStartupMessage:        true,
@@ -43,31 +56,4 @@ func Serv(driver *ddrv.Driver, cfg *Config) error {
 			return ctx.Status(code).JSON(api.Response{Message: "internal server error"})
 		},
 	}
-
-	// Initialize fiber app
-	app := fiber.New(fconfig)
-
-	// Setup config vars
-	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("username", cfg.Username)
-		c.Locals("password", cfg.Password)
-		c.Locals("guestmode", cfg.GuestMode)
-		c.Locals("asyncwrite", cfg.AsyncWrite)
-		return c.Next()
-	})
-
-	// Enable logger
-	logger := log.With().Str("c", "httpserver").Logger()
-	app.Use(fzl.New(fzl.Config{Logger: &logger}))
-
-	// Enable cors
-	app.Use(cors.New())
-
-	// Load Web routes
-	web.Load(app)
-
-	// Register API routes
-	api.Load(app, driver)
-
-	return app.Listen(cfg.Addr)
 }

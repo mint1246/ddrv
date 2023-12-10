@@ -11,8 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/afero"
 
-	"github.com/forscht/ddrv/internal/filesystem"
-	"github.com/forscht/ddrv/pkg/ddrv"
+	"github.com/forscht/ddrv/internal/config"
 )
 
 const IPResolveURL = "https://ipinfo.io/ip"
@@ -23,30 +22,27 @@ var (
 	ErrBadUserNameOrPassword = errors.New("bad username or password") // Error for failed authentication
 )
 
-type Config struct {
-	Addr       string `mapstructure:"addr"`
-	Username   string `mapstructure:"username"`
-	Password   string `mapstructure:"password"`
-	PortRange  string `mapstructure:"port_range"`
-	AsyncWrite bool   `mapstructure:"async_write"`
-}
+// New creates a new FTP server instance with the provided file system and address.
+func New(fs afero.Fs, addr string) *ftpserver.FtpServer { // Return a pointer to an FTP server instance
+	ptr := config.FTPPortRange()
+	username := config.Username()
+	password := config.Password()
 
-func Serv(drvr *ddrv.Driver, cfg *Config) error { // Return a pointer to an FTP server instance
 	var portRange *ftpserver.PortRange
-	if cfg.PortRange != "" {
+	if ptr != "" {
 		portRange = &ftpserver.PortRange{}
-		if _, err := fmt.Sscanf(cfg.PortRange, "%d-%d", &portRange.Start, &portRange.End); err != nil {
+		if _, err := fmt.Sscanf(ptr, "%d-%d", &portRange.Start, &portRange.End); err != nil {
 			log.Fatal().Str("c", "ftpserver").Int("portstart", portRange.Start).
 				Int("portend", portRange.End).Err(err).Msg("bad port range")
 		}
 	}
-	fs := filesystem.New(drvr, cfg.AsyncWrite)
+
 	driver := &Driver{
-		Fs:       fs,           // The file system to serve over FTP
-		username: cfg.Username, // Username for authentication
-		password: cfg.Password, // Password for authentication
+		Fs:       fs,       // The file system to serve over FTP
+		username: username, // Username for authentication
+		password: password, // Password for authentication
 		Settings: &ftpserver.Settings{
-			ListenAddr:          cfg.Addr,                     // The network address to listen on
+			ListenAddr:          addr,                         // The network address to listen on
 			DefaultTransferType: ftpserver.TransferTypeBinary, // Default to binary transfer mode
 			// Stooopid FTP thinks connection is idle, even when file transfer is going on.
 			// Default is 900 seconds so, after which the server will drop the connection
@@ -76,7 +72,7 @@ func Serv(drvr *ddrv.Driver, cfg *Config) error { // Return a pointer to an FTP 
 	// Instantiate the FTP server with the driver and return a pointer to it
 	server := ftpserver.NewFtpServer(driver)
 
-	return server.ListenAndServe()
+	return server
 }
 
 // Driver is the FTP server driver implementation.

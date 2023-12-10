@@ -25,12 +25,8 @@ type Provider struct {
 	locker *locker.Locker
 }
 
-type Config struct {
-	DbPath string `mapstructure:"db_path"`
-}
-
-func New(driver *ddrv.Driver, cfg *Config) dp.DataProvider {
-	db, err := bbolt.Open(cfg.DbPath, 0666, nil)
+func New(path string, driver *ddrv.Driver) dp.DataProvider {
+	db, err := bbolt.Open(path, 0666, nil)
 	if err != nil {
 		log.Fatal().Str("c", "bolt provider").Err(err).Msg("failed to open db")
 	}
