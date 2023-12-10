@@ -45,6 +45,20 @@ func main() {
 	if config.Debug() {
 		zl.SetGlobalLevel(zl.DebugLevel)
 	}
+
+    // Check if the sslcertificates folder exists
+    _, err = os.Stat("/etc/sslcertificates")
+    if os.IsNotExist(err) {
+        // Create the sslcertificates folder with 0755 permission mode
+        err = os.Mkdir("/etc/sslcertificates", 0755)
+        if err != nil {
+            // Handle the error
+            log.Fatal().Err(err).Str("c", "main").Msg("failed to create sslcertificates folder")
+        }
+        // Log the success
+        log.Info().Str("c", "main").Msg("created sslcertificates folder")
+    }
+
 	// Create a ddrv manager
 	driver, err := ddrv.New(config.Tokens(), config.Channels(), config.ChunkSize())
 	if err != nil {
@@ -69,7 +83,9 @@ func main() {
 	}
 	if config.HTTPAddr() != "" {
 		go func() {
-			httpServer := http.New(driver)
+			httpServer := http.New(*driver)
+            // Start the HTTPS server
+            http.Start(httpServer)
 			log.Info().Str("c", "main").Str("addr", config.HTTPAddr()).Msg("starting http server")
 			errCh <- httpServer.Listen(config.HTTPAddr())
 		}()
