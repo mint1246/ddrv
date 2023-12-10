@@ -1,62 +1,56 @@
 package http
 
 import (
-	"errors"
-	"log"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-
-	"github.com/forscht/ddrv/internal/http/api"
-	"github.com/forscht/ddrv/internal/http/web"
-	"github.com/forscht/ddrv/pkg/ddrv"
+    "errors"
+    "log" // Keep this line
+    fzl "github.com/gofiber/contrib/fiberzerolog"
+    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2/middleware/cors"
+    zlog "github.com/rs/zerolog/log" // Add an alias here
+    "github.com/forscht/ddrv/internal/http/api" // Add this line
+    "github.com/forscht/ddrv/internal/http/web" // Add this line
+    "github.com/forscht/ddrv/pkg/ddrv" // Add this line
+    // Other imports
 )
 
-func New(mgr *ddrv.Manager) *fiber.App {
+func New(driver ddrv.Driver) *fiber.App { // Use the package name as a prefix
 
-	// Initialize fiber app
-	app := fiber.New(config())
+    // Initialize fiber app
+    app := fiber.New(config())
 
-	// Enable logger
-	app.Use(logger)
+    // Enable logger
+    logger := zlog.With().Str("c", "httpserver").Logger() // Use the alias here
+    app.Use(fzl.New(fzl.Config{Logger: &logger}))
 
-	// Enable cors
-	app.Use(cors.New())
+    // Enable cors
+    app.Use(cors.New())
 
-	// Load Web routes
-	web.Load(app)
-	// Register API routes
-	api.Load(app, mgr)
+    // Load Web routes
+    web.Load(app) // Use the package name as a prefix
 
-	return app
+    // Register API routes
+    api.Load(app, &driver) // Use the package name as a prefix
+
+    return app
 }
 
 func config() fiber.Config {
-	//engine := html.New("./http/web/views", ".html")
-	return fiber.Config{
-		DisablePreParseMultipartForm: true, // https://github.com/gofiber/fiber/issues/1838
-		StreamRequestBody:            true,
-		DisableStartupMessage:        true,
-		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			code := fiber.StatusInternalServerError // Status code defaults to 500
-			if ctx.BaseURL() == "http://" || ctx.BaseURL() == "https://" {
-				return nil
-			}
-			// Retrieve the custom status code if it's a *fiber.Error
-			var e *fiber.Error
-			if errors.As(err, &e) {
-				code = e.Code
-			}
-			log.Printf("http: error=%q code=%d method=%s url=%s ip=%s", err, code, ctx.Method(), ctx.OriginalURL(), ctx.IP())
-			if code != fiber.StatusInternalServerError {
-				return ctx.Status(code).JSON(api.Response{Message: err.Error()})
-			}
-			return ctx.Status(code).JSON(api.Response{Message: "internal server error"})
-		},
-	}
-}
-
-func logger(c *fiber.Ctx) error {
-	log.Printf("http: method=%s url=%s ip=%s", c.Method(), c.OriginalURL(), c.IP())
-	return c.Next()
-}
+    //engine := html.New("./http/web/views", ".html")
+    return fiber.Config{
+        DisablePreParseMultipartForm: true, // https://github.com/gofiber/fiber/issues/1838
+        StreamRequestBody:            true,
+        DisableStartupMessage:        true,
+        ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+            code := fiber.StatusInternalServerError // Status code defaults to 500
+            if ctx.BaseURL() == "http://" || ctx.BaseURL() == "https://" {
+                return nil
+            }
+            // Retrieve the custom status code if it's a *fiber.Error
+            var e *fiber.Error
+            if errors.As(err, &e) {
+                code = e.Code
+            }
+            if code != fiber.StatusInternalServerError {
+                return ctx.Status(code).JSON(api.Response{Message: err.Error()}) // Use the package name as a prefix
+            }
+            return ctx.Status(code).JSON(api.Response{Message: "internal server error"}) // Use the package name as
