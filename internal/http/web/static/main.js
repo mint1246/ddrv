@@ -96,20 +96,35 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
         }
     }
 
-$scope.load = function (id) {
-    FMService.getDir(id).then((directory) => {
-        $scope.directory = directory;
-        $scope.directory.files.forEach(file => {
-            const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp'];
-
-            if (imageExtensions.includes(extension)) {
-                file.imageSrc = `${$scope.baseURL}/files/${file.id}/${file.name}`;
-            }
-        });
-        $scope.$apply(); // Update the scope after modifying file.imageSrc
-    });
-}
+// Add a variable to store the toggle state
+$scope.embed = false;
+// Add a function to toggle the embed state
+$scope.toggleEmbed = function () {
+  $scope.embed = !$scope.embed;
+};
+// Modify the open function to check the embed state
+$scope.open = function (file) {
+  const url = `${$scope.baseURL}/files/${file.id}/${file.name}`;
+  // Create a regular expression to match photo formats
+  const photoRegex = /\.(jpg|jpeg|png|gif|bmp|svg)$/i;
+  // Test if the url matches the photoRegex
+  if (photoRegex.test(url)) {
+    // If it is a photo, check the embed state
+    if ($scope.embed) {
+      // If embed is true, embed it in the page
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = file.name;
+      document.body.appendChild(img);
+    } else {
+      // If embed is false, open it in a new tab
+      window.open(url, "_blank");
+    }
+  } else {
+    // If it is not a photo, open it in a new tab
+    window.open(url, "_blank");
+  }
+};
 
 
     $scope.open = function (file) {
