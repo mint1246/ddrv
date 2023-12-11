@@ -96,21 +96,21 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
         }
     }
 
-    $scope.load = function (id) {
-        FMService.getDir(id).then((directory) => {
-            $scope.$apply(() => {
-                $scope.directory = directory;
-                $scope.directory.files.forEach(file => {
-                    const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-                    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp'];
+$scope.load = function (id) {
+    FMService.getDir(id).then((directory) => {
+        $scope.directory = directory;
+        $scope.directory.files.forEach(file => {
+            const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp'];
 
-                    if (imageExtensions.includes(extension)) {
-                        file.imageSrc = `${$scope.baseURL}/files/${file.id}/${file.name}`;
-                    }
-                });
-            });
+            if (imageExtensions.includes(extension)) {
+                file.imageSrc = `${$scope.baseURL}/files/${file.id}/${file.name}`;
+            }
         });
-    }
+        $scope.$apply(); // Update the scope after modifying file.imageSrc
+    });
+}
+
 
     $scope.open = function (file) {
         const url = `${$scope.baseURL}/files/${file.id}/${file.name}`
