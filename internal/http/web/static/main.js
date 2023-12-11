@@ -97,12 +97,16 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
             $scope.btnDelete = false;
         }
     }
-// Add a variable to store the toggle state
-$scope.embed = false;
 // Add a function to toggle the embed state
 $scope.toggleEmbed = function () {
+  // Log the current value of the embed state to the console
+  console.log("Before toggle: " + $scope.embed);
+  // Switch the embed value to the opposite
   $scope.embed = !$scope.embed;
+  // Log the new value of the embed state to the console
+  console.log("After toggle: " + $scope.embed);
 };
+
 $scope.open = function (file) {
   const url = `${$scope.baseURL}/files/${file.id}/${file.name}`;
   // Create a regular expression to match photo formats
