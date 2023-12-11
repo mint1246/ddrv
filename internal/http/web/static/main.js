@@ -119,6 +119,9 @@ $scope.open = function (file) {
       const table = document.getElementById("table");
       // Append the img element to the table element
       table.appendChild(img);
+      // Log the url and the table element to the console
+      console.log("Embedding photo: " + url);
+      console.log("Table element: ", table);
     } else {
       // If embed is false, open it in a new tab
       window.open(url, "_blank");
@@ -128,7 +131,6 @@ $scope.open = function (file) {
     window.open(url, "_blank");
   }
 };
-
 
 
     $scope.createFolder = async function () {
