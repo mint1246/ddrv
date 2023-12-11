@@ -1,5 +1,6 @@
 // Import the jsftp library
-const jsftp = require("jsftp");
+import jsftp from "../../../../node_modules/jsftp/index.js";
+
 
 // Create a new FTP instance with the domain and credentials
 const ftp = new jsftp({
