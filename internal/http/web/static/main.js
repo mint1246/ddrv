@@ -102,7 +102,6 @@ $scope.embed = false;
 $scope.toggleEmbed = function () {
   $scope.embed = !$scope.embed;
 };
-// Modify the open function to check the embed state
 $scope.open = function (file) {
   const url = `${$scope.baseURL}/files/${file.id}/${file.name}`;
   // Create a regular expression to match photo formats
@@ -115,7 +114,10 @@ $scope.open = function (file) {
       const img = document.createElement("img");
       img.src = url;
       img.alt = file.name;
-      document.body.appendChild(img);
+      // Get the table element by its id
+      const table = document.getElementById("table");
+      // Append the img element to the table element
+      table.appendChild(img);
     } else {
       // If embed is false, open it in a new tab
       window.open(url, "_blank");
@@ -125,16 +127,8 @@ $scope.open = function (file) {
     window.open(url, "_blank");
   }
 };
-    $scope.load = function (id) {
-        FMService.getDir(id).then((directory) => {
-            $scope.$apply(() => $scope.directory = directory)
-        })
-    }
 
-    $scope.open = function (file) {
-        const url = `${$scope.baseURL}/files/${file.id}/${file.name}`
-        window.open(url, '_blank');
-    }
+
 
     $scope.createFolder = async function () {
         try {
