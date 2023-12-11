@@ -68,11 +68,12 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
     // current directory
     $scope.directory = {files: []}
 
-    $scope.selectAll = function (selectAllCheckbox) {
-        $scope.directory.files.forEach(function (file) {
-            file.selected = selectAllCheckbox;
-        });
-    };
+    // Define the load function as a method of the $scope object
+    $scope.load = function (id) {
+        FMService.getDir(id).then((directory) => {
+            $scope.$apply(() => $scope.directory = directory)
+        })
+    }
 
     $scope.$watch('directory.files', updateButtons.bind(this), true);
     $scope.$watch('authenticated', function () {
