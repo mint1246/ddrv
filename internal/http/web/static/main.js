@@ -78,7 +78,13 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
     $scope.$watch('directory.files', updateButtons.bind(this), true);
     $scope.$watch('authenticated', function () {
         updateButtons()
-        $scope.load()
+        // Log a message before calling the $scope.load function
+        console.log("Calling the $scope.load function...");
+        // Call the $scope.load function
+        $scope.load();
+        // Log a message after calling the $scope.load function
+        console.log("The $scope.load function is done.");
+
     }, true);
 
     function updateButtons() {
@@ -97,24 +103,6 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
             $scope.btnDelete = false;
         }
     }
-        // Get the files array from the directory object
-        const files = $scope.directory.files;
-        console.log(files)
-        // Create a regular expression object with the pattern
-        const regex = /\.(png|jpeg|jpg|gif)$/i;
-        // Filter the files that match the pattern
-        const photoFiles = files.filter(file => {
-        // Test the file name with the regular expression
-        return regex.test(file.name);
-    });
-        // Log the result to the console
-        console.log(photoFiles);
-        // Log the number of photo files to the console
-        console.log("Number of photo files: " + photoFiles.length);
-        // Log the names and sizes of the photo files to the console
-        photoFiles.forEach(file => {
-        console.log("Name: " + file.name + ", Size: " + file.size);
-});
     $scope.createFolder = async function () {
         try {
             await FMService.createDir({parent: $scope.directory.id, name: $scope.newFolderName})
@@ -244,6 +232,10 @@ app.service('FMService', ['$http', function ($http) {
             // Log a message before making the HTTP request
             const endpoint = id ? '/api/directories/' + id : '/api/directories'
             console.log("Making the HTTP request to the /api/directories endpoint...");
+            // Log the endpoint to the console
+            console.log("The endpoint is: " + endpoint);
+            // Log the response data to the console
+            console.log("The response data is: " + dir);    
             // Make the HTTP request
             const {data: {data: dir}} = await $http.get(endpoint)
             // Log a message after making the HTTP request
@@ -288,7 +280,24 @@ app.service('FMService', ['$http', function ($http) {
         },
     };
 }]);
-
+        // Get the files array from the directory object
+        const files = $scope.directory.files;
+        console.log(files)
+        // Create a regular expression object with the pattern
+        const regex = /\.(png|jpeg|jpg|gif)$/i;
+        // Filter the files that match the pattern
+        const photoFiles = files.filter(file => {
+        // Test the file name with the regular expression
+        return regex.test(file.name);
+    });
+        // Log the result to the console
+        console.log(photoFiles);
+        // Log the number of photo files to the console
+        console.log("Number of photo files: " + photoFiles.length);
+        // Log the names and sizes of the photo files to the console
+        photoFiles.forEach(file => {
+        console.log("Name: " + file.name + ", Size: " + file.size);
+});
 function humanReadableSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024
 
