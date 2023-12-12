@@ -99,6 +99,7 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
     }
         // Get the files array from the directory object
         const files = $scope.directory.files;
+        console.log(files)
         // Create a regular expression object with the pattern
         const regex = /\.(png|jpeg|jpg|gif)$/i;
         // Filter the files that match the pattern
