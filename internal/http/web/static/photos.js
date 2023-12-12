@@ -9,4 +9,10 @@ const photoFiles = files.filter(file => {
 });
 // Log the result to the console
 console.log(photoFiles);
+// Log the number of photo files to the console
+console.log("Number of photo files: " + photoFiles.length);
+// Log the names and sizes of the photo files to the console
+photoFiles.forEach(file => {
+  console.log("Name: " + file.name + ", Size: " + file.size);
+});
 }])
