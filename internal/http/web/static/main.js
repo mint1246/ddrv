@@ -326,12 +326,6 @@ function triggerDownload(url, name) {
     link.click();
 }
 app.controller('controller', ['$scope', 'FMService', '$interval', function ($scope, FMService, $interval) {
-    // Log a message before calling the $scope.load function
-console.log("Calling the $scope.load function...");
-// Call the $scope.load function
-$scope.load();
-// Log a message after calling the $scope.load function
-console.log("The $scope.load function is done.");
 // Get the files array from the directory object
 const files = $scope.directory.files;
 // Filter the files that have the image MIME type
