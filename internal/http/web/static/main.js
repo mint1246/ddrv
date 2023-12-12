@@ -232,16 +232,10 @@ app.service('FMService', ['$http', function ($http) {
             // Log a message before making the HTTP request
             const endpoint = id ? '/api/directories/' + id : '/api/directories'
             console.log("Making the HTTP request to the /api/directories endpoint...");
-            // Log the endpoint to the console
-            console.log("The endpoint is: " + endpoint);
-            // Log the response data to the console
-            console.log("The response data is: " + dir);    
             // Make the HTTP request
             const {data: {data: dir}} = await $http.get(endpoint)
             // Log a message after making the HTTP request
             console.log("The HTTP request is done.");
-            // Log the response data to the console
-            console.log("The response data is: " + dir);
             dir.files = dir.files.map(f => {
                 return {...f, size: f.dir ? 'folder' : humanReadableSize(f.size), selected: false}
             })
@@ -280,6 +274,7 @@ app.service('FMService', ['$http', function ($http) {
         },
     };
 }]);
+app.controller('controller', ['$scope', 'FMService', '$interval', function ($scope, FMService, $interval) {
         // Get the files array from the directory object
         const files = $scope.directory.files;
         console.log(files)
@@ -298,6 +293,7 @@ app.service('FMService', ['$http', function ($http) {
         photoFiles.forEach(file => {
         console.log("Name: " + file.name + ", Size: " + file.size);
 });
+}])
 function humanReadableSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024
 
