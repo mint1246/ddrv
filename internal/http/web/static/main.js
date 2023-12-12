@@ -107,16 +107,6 @@ $scope.toggleEmbed = function () {
   console.log("After toggle: " + $scope.embed);
 };
 
-// Get the files array from the directory object
-const files = $scope.directory.files;
-// Filter the files that have the image MIME type
-const photoFiles = files.filter(file => {
-  // Check if the file type starts with image/
-  return file.type.startsWith("image/");
-});
-// Log the result to the console
-console.log(photoFiles);
-
     $scope.createFolder = async function () {
         try {
             await FMService.createDir({parent: $scope.directory.id, name: $scope.newFolderName})
