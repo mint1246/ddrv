@@ -27,4 +27,10 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
       // Log the error to the console
       console.error("Error: " + error.message);
     }
+    // Log a message before calling the $scope.load function
+console.log("Calling the $scope.load function...");
+// Call the $scope.load function
+$scope.load();
+// Log a message after calling the $scope.load function
+console.log("The $scope.load function is done.");
   }]);
