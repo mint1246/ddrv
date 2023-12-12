@@ -1,4 +1,3 @@
-const app = angular.module('application', []);
 app.controller('controller', ['$scope', 'FMService', '$interval', function ($scope, FMService, $interval) {
 
 // Get the files array from the directory object
