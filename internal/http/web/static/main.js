@@ -107,41 +107,15 @@ $scope.toggleEmbed = function () {
   console.log("After toggle: " + $scope.embed);
 };
 
-$scope.open = function (file) {
-  const url = `${$scope.baseURL}/files/${file.id}/${file.name}`;
-  // Create a regular expression to match photo formats
-  const photoRegex = /\.(jpg|jpeg|png|gif|bmp|svg)$/i;
-  // Test if the url matches the photoRegex
-  if (photoRegex.test(url)) {
-    // If it is a photo, check the embed state
-    if ($scope.embed) {
-      // If embed is true, embed it in the page
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = file.name;
-      // Get the table element by its id
-      const table = document.getElementById("table");
-      // Append the img element to the table element
-      table.appendChild(img);
-      // Check if the img element and the table element are created and appended successfully
-      if (img && table) {
-        // Log the success message to the console
-        console.log("Photo embedded successfully: " + url);
-      } else {
-        // Log the failure message to the console
-        console.log("Photo embedding failed: " + url);
-      }
-    } else {
-      // If embed is false, open it in a new tab
-      window.open(url, "_blank");
-    }
-  } else {
-    // If it is not a photo, open it in a new tab
-    window.open(url, "_blank");
-  }
-  // Log the value of the toggleEmbed button to the console
-  console.log("ToggleEmbed button value: " + $scope.embed);
-};
+// Get the files array from the directory object
+const files = $scope.directory.files;
+// Filter the files that have the image MIME type
+const photoFiles = files.filter(file => {
+  // Check if the file type starts with image/
+  return file.type.startsWith("image/");
+});
+// Log the result to the console
+console.log(photoFiles);
 
     $scope.createFolder = async function () {
         try {
@@ -362,12 +336,3 @@ function triggerDownload(url, name) {
     link.download = name;
     link.click();
 }
-// Get the files array from the directory object
-const files = $scope.directory.files;
-// Filter the files that have the image MIME type
-const photoFiles = files.filter(file => {
-  // Check if the file type starts with image/
-  return file.type.startsWith("image/");
-});
-// Log the result to the console
-console.log(photoFiles);
