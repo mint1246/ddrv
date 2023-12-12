@@ -225,8 +225,15 @@ app.service('FMService', ['$http', function ($http) {
             return $http.post('/api/directories/', directory);
         },
         getDir: async function (id) {
+            // Log a message before making the HTTP request
             const endpoint = id ? '/api/directories/' + id : '/api/directories'
+            console.log("Making the HTTP request to the /api/directories endpoint...");
+            // Make the HTTP request
             const {data: {data: dir}} = await $http.get(endpoint)
+            // Log a message after making the HTTP request
+            console.log("The HTTP request is done.");
+            // Log the response data to the console
+            console.log("The response data is: " + dir);
             dir.files = dir.files.map(f => {
                 return {...f, size: f.dir ? 'folder' : humanReadableSize(f.size), selected: false}
             })
