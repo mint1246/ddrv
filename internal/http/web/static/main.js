@@ -124,7 +124,6 @@ app.controller('controller', ['$scope', 'FMService', '$interval', function ($sco
           // Log the error to the console
           console.error("Error: " + error.message);
         }
-        }]);
     $scope.createFolder = async function () {
         try {
             await FMService.createDir({parent: $scope.directory.id, name: $scope.newFolderName})
